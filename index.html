@@ -3,1410 +3,621 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Biblioteca de consultas - FCS</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⟨⟩</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<title>Biblioteca de consultas</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>_</text></svg>">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #2a2d35; border-radius: 3px; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes slideUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-@keyframes toastIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#08090b;--bg1:#0e1014;--bg2:#14161c;--bg3:#1c1f27;--bg4:#242830;
+  --amber:#f0a500;--amber2:#ffc84a;--amber3:#3d2a00;--amber4:#1e1400;
+  --cyan:#00c8b4;--cyan2:#004d47;
+  --red:#e84040;--red2:#3d0f0f;
+  --green:#36c96e;--green2:#0d3320;
+  --text0:#f0ead8;--text1:#a89f88;--text2:#5c5647;--text3:#2e2a22;
+  --border:#1f2230;--border2:#2a2e3d;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',system-ui,sans-serif;
+  --r:4px;
+}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
 
-body {
-  font-family: 'DM Sans', 'Segoe UI', system-ui, sans-serif;
-  background: #0f1117; color: #e2e8f0; height: 100vh; overflow: hidden; display: flex; flex-direction: column;
+body{
+  font-family:var(--sans);background:var(--bg0);color:var(--text0);
+  height:100vh;overflow:hidden;display:flex;flex-direction:column;
 }
 
 /* ─── INPUTS ─── */
-input, select, textarea {
-  width: 100%; padding: 10px 14px; background: #12141a;
-  border: 1px solid #2a2d35; border-radius: 10px; color: #e2e8f0;
-  font-size: 14px; outline: none; font-family: inherit;
-  transition: border-color 0.2s; box-sizing: border-box;
+input,select,textarea{
+  width:100%;padding:8px 12px;background:var(--bg2);
+  border:1px solid var(--border2);border-radius:var(--r);color:var(--text0);
+  font-size:13px;outline:none;font-family:var(--mono);
+  transition:border-color .15s,background .15s;box-sizing:border-box;
 }
-input:focus, select:focus, textarea:focus { border-color: #3b82f6; }
-textarea {
-  min-height: 140px; resize: vertical;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  font-size: 13px; line-height: 1.6;
+input:focus,select:focus,textarea:focus{border-color:var(--amber);background:var(--bg3)}
+textarea{min-height:130px;resize:vertical;font-size:12px;line-height:1.7}
+select{
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%235c5647' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;
 }
-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 12px center;
-  padding-right: 32px;
-}
-select option { background: #1a1d23; color: #e2e8f0; }
+select option{background:var(--bg2);color:var(--text0)}
+::placeholder{color:var(--text2)}
 
 /* ─── BUTTONS ─── */
-.btn { padding: 10px 20px; border: none; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; letter-spacing: 0.2px; }
-.btn:hover { filter: brightness(1.15); }
-.btn-primary { background: #3b82f6; color: #fff; }
-.btn-secondary { background: #2a2d35; color: #94a3b8; }
-.btn-sm { padding: 4px 10px; font-size: 12px; }
-.btn-danger { color: #ef4444; }
+.btn{
+  padding:8px 16px;border:1px solid var(--border2);border-radius:var(--r);
+  font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;
+  font-family:var(--mono);letter-spacing:.3px;background:var(--bg2);color:var(--text1);
+}
+.btn:hover{border-color:var(--amber);color:var(--amber);background:var(--amber4)}
+.btn-primary{background:var(--amber);color:var(--bg0);border-color:var(--amber);font-weight:600}
+.btn-primary:hover{background:var(--amber2);border-color:var(--amber2);color:var(--bg0)}
+.btn-sm{padding:3px 9px;font-size:11px}
+.btn-danger:hover{border-color:var(--red);color:var(--red);background:var(--red2)}
 
 /* ─── LABELS ─── */
-.label { display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #94a3b8; letter-spacing: 0.5px; text-transform: uppercase; }
+.label{display:block;margin-bottom:5px;font-size:10px;font-weight:600;color:var(--text2);letter-spacing:1.2px;text-transform:uppercase;font-family:var(--mono)}
 
 /* ─── TAGS ─── */
-.tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; letter-spacing: 0.3px; }
-.tag-purple { background: #8b5cf622; color: #8b5cf6; border: 1px solid #8b5cf644; }
-.tag-green { background: #05966922; color: #059669; border: 1px solid #05966944; }
-.tag-remove { cursor: pointer; opacity: 0.7; font-size: 13px; }
+.tag{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:2px;font-size:10px;font-weight:500;letter-spacing:.4px;font-family:var(--mono)}
+.tag-purple{background:transparent;color:#8b7fff;border:1px solid #8b7fff33}
+.tag-green{background:transparent;color:var(--cyan);border:1px solid var(--cyan2)}
+.tag-remove{cursor:pointer;opacity:.6;font-size:12px}
 
 /* ─── LAYOUT ─── */
-.header { padding: 20px 32px; border-bottom: 1px solid #1e2028; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(180deg, #13151c 0%, #0f1117 100%); flex-wrap: wrap; gap: 12px; }
-.header-left { display: flex; align-items: center; gap: 14px; }
-.header-icon { width: 40px; height: 40px; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; }
-.header-title { font-size: 20px; font-weight: 700; color: #f8fafc; letter-spacing: -0.5px; }
-.header-subtitle { font-size: 12px; color: #6b7280; margin-top: 2px; }
-.header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.header{
+  padding:0 24px;height:52px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--bg1);flex-shrink:0;gap:12px;position:relative;
+}
+.header::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,var(--amber3),transparent);
+}
+.header-left{display:flex;align-items:center;gap:12px}
+.header-logo{
+  font-family:var(--mono);font-size:15px;font-weight:600;color:var(--amber);
+  letter-spacing:-1px;display:flex;align-items:center;gap:8px;
+}
+.header-logo-bracket{color:var(--text2)}
+.cursor{
+  display:inline-block;width:8px;height:14px;background:var(--amber);
+  animation:blink 1.2s step-end infinite;vertical-align:middle;margin-left:1px;
+}
+.header-meta{font-size:11px;color:var(--text2);font-family:var(--mono);padding-left:16px;border-left:1px solid var(--border2)}
+.header-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 
-.body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-.sidebar { width: 220px; border-right: 1px solid #1e2028; padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; overflow-y: auto; min-height: 0; }
-.sidebar-btn { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border: none; border-radius: 10px; background: transparent; color: #6b7280; font-size: 14px; cursor: pointer; transition: all 0.15s; text-align: left; width: 100%; font-family: inherit; }
-.sidebar-btn.active { background: #1e2028; color: #f0f0f0; font-weight: 600; }
-.sidebar-btn:hover { background: #1a1d23; }
-.sidebar-divider { margin: 16px 0 8px 14px; font-size: 10px; font-weight: 700; color: #4b5068; text-transform: uppercase; letter-spacing: 1.2px; }
-.sidebar-filters { padding: 0 8px; }
-.sidebar-filters .label { font-size: 10px; }
-.sidebar-filters select { font-size: 12px; padding: 6px 10px; margin-bottom: 8px; }
+.body{display:flex;flex:1;overflow:hidden;min-height:0}
+.sidebar{
+  width:200px;border-right:1px solid var(--border);padding:16px 0;
+  display:flex;flex-direction:column;gap:2px;flex-shrink:0;overflow-y:auto;
+  background:var(--bg1);
+}
+.sidebar-label{font-size:9px;font-weight:600;color:var(--text2);letter-spacing:1.5px;text-transform:uppercase;font-family:var(--mono);padding:0 12px;margin:12px 0 4px}
+.sidebar-btn{
+  display:flex;align-items:center;gap:8px;padding:7px 12px;border:none;
+  border-radius:0;background:transparent;color:var(--text2);font-size:12px;
+  cursor:pointer;transition:all .12s;text-align:left;width:100%;font-family:var(--mono);
+  border-left:2px solid transparent;
+}
+.sidebar-btn.active{background:var(--bg3);color:var(--amber);border-left-color:var(--amber)}
+.sidebar-btn:hover{background:var(--bg2);color:var(--text0)}
+.sidebar-icon{font-size:13px;width:16px;text-align:center}
+.sidebar-filters{padding:0 12px}
+.sidebar-filters .label{font-size:9px}
+.sidebar-filters select{font-size:11px;padding:5px 8px;margin-bottom:6px;background:var(--bg2)}
+.sidebar-count{font-size:10px;color:var(--text2);margin-left:auto;font-family:var(--mono)}
 
-.main { flex: 1; padding: 28px; overflow-y: auto; min-height: 0; }
-#app { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.main{flex:1;padding:20px 24px;overflow-y:auto;min-height:0;background:var(--bg0)}
+#app{display:flex;flex-direction:column;flex:1;overflow:hidden}
 
 /* ─── SEARCH ─── */
-.search-wrap { position: relative; margin-bottom: 20px; }
-.search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #4b5068; font-size: 16px; pointer-events: none; }
-.search-input { padding-left: 40px; font-size: 15px; }
-.search-clear { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #6b7280; cursor: pointer; font-size: 14px; background: none; border: none; }
-
-/* ─── CARDS ─── */
-.query-card { background: #1a1d23; border: 1px solid #2a2d35; border-radius: 14px; padding: 18px; cursor: pointer; transition: all 0.2s; }
-.query-card:hover { border-color: #3b82f6; }
-.query-card + .query-card { margin-top: 10px; }
-.card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-.card-title { font-size: 15px; font-weight: 600; color: #f0f0f0; }
-.card-desc { font-size: 12px; color: #6b7280; margin-top: 4px; }
-.card-actions { display: flex; gap: 6px; flex-shrink: 0; }
-.card-sql { background: #12141a; border-radius: 10px; padding: 12px; max-height: 80px; overflow: hidden; margin-bottom: 10px; }
-.card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
-
-/* ─── EMPTY STATE ─── */
-.empty { text-align: center; padding: 60px 20px; color: #4b5068; }
-.empty-icon { font-size: 48px; margin-bottom: 16px; }
-.empty-title { font-size: 16px; font-weight: 600; }
-.empty-desc { font-size: 13px; margin-top: 4px; }
-
-/* ─── SQL HIGHLIGHT ─── */
-.sql-code { font-family: 'JetBrains Mono', 'Fira Code', 'Source Code Pro', monospace; font-size: 13px; line-height: 1.7; }
-.sql-keyword { color: #60a5fa; font-weight: 600; }
-.sql-string { color: #f59e42; }
-.sql-number { color: #a78bfa; }
-.sql-comment { color: #6b7280; font-style: italic; }
-.sql-operator { color: #94a3b8; }
-.sql-default { color: #e2e8f0; }
-
-/* ─── MODAL ─── */
-.modal-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s ease; }
-.modal { background: #1a1d23; border: 1px solid #2a2d35; border-radius: 16px; width: 90%; max-height: 85vh; display: flex; flex-direction: column; box-shadow: 0 25px 60px rgba(0,0,0,0.5); }
-.modal-header { padding: 20px 24px; border-bottom: 1px solid #2a2d35; display: flex; justify-content: space-between; align-items: center; }
-.modal-title { font-size: 18px; font-weight: 700; color: #f0f0f0; }
-.modal-close { background: none; border: none; color: #6b7280; font-size: 22px; cursor: pointer; padding: 4px 8px; border-radius: 6px; }
-.modal-close:hover { color: #f0f0f0; }
-.modal-body { padding: 24px; overflow-y: auto; flex: 1; }
-
-/* ─── FORM ─── */
-.form-group { margin-bottom: 16px; }
-.form-row { display: flex; gap: 8px; }
-.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
-
-/* ─── DB PILLS ─── */
-.db-pill { padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid #2a2d35; background: #12141a; color: #6b7280; cursor: pointer; transition: all 0.15s; font-family: inherit; }
-.db-pill.active { border-color: #059669; background: #05966922; color: #34d399; }
-.db-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-
-/* ─── SQL VIEWER ─── */
-.sql-viewer { background: #0c0e14; border-radius: 12px; padding: 20px; border: 1px solid #1e2028; max-height: 400px; overflow: auto; white-space: pre-wrap; margin-bottom: 16px; }
-.sql-preview { background: #0c0e14; border-radius: 10px; padding: 14px; max-height: 120px; overflow: auto; border: 1px solid #1e2028; }
-
-/* ─── FILE UPLOAD ─── */
-.file-upload { display: flex; align-items: center; justify-content: center; padding: 24px; border: 2px dashed #2a2d35; border-radius: 12px; cursor: pointer; color: #6b7280; font-size: 14px; transition: all 0.2s; }
-.file-upload:hover { border-color: #3b82f6; color: #94a3b8; }
-.file-upload input { display: none; }
-
-/* ─── TABLE ─── */
-.batch-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.batch-table th { padding: 10px 12px; text-align: left; color: #6b7280; font-weight: 600; border-bottom: 1px solid #2a2d35; background: #12141a; position: sticky; top: 0; z-index: 1; }
-.batch-table td { padding: 8px 6px; border-bottom: 1px solid #1e2028; }
-.batch-table input[type="text"] { padding: 4px 8px; font-size: 12px; }
-.batch-table-wrap { max-height: 420px; overflow-y: auto; border-radius: 10px; border: 1px solid #2a2d35; }
-.batch-sql-preview { background: #0c0e14; border-radius: 6px; padding: 6px; max-height: 40px; overflow: hidden; }
-
-/* ─── ITEM ROW ─── */
-.item-row { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #1a1d23; border: 1px solid #2a2d35; border-radius: 10px; }
-.item-row + .item-row { margin-top: 6px; }
-.item-count { color: #4b5068; font-size: 12px; flex: 1; }
-
-/* ─── TOAST ─── */
-.toast { position: fixed; top: 20px; right: 20px; z-index: 9999; padding: 12px 20px; border-radius: 12px; color: #fff; font-size: 14px; font-weight: 600; box-shadow: 0 8px 30px rgba(0,0,0,0.3); animation: toastIn 0.3s ease; }
-.toast-success { background: #059669; }
-.toast-warn { background: #d97706; }
-.toast-error { background: #dc2626; }
-
-.saving-indicator { position: fixed; bottom: 16px; right: 16px; z-index: 9999; padding: 6px 14px; border-radius: 20px; font-size: 11px; background: #1e2028; color: #6b7280; border: 1px solid #2a2d35; }
-.status-dot { margin-left: 8px; }
-.status-green { color: #059669; }
+.search-wrap{position:relative;margin-bottom:14px}
+.search-prefix{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--amber);font-size:11px;font-family:var(--mono);pointer-events:none;font-weight:600}
+.search-input{padding-left:38px;font-family:var(--mono);font-size:13px;letter-spacing:.2px}
+.search-clear{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--text2);cursor:pointer;font-size:12px;background:none;border:none;font-family:var(--mono)}
 
 /* ─── SORT BAR ─── */
-.sort-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-.sort-btn { padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid #2a2d35; background: #12141a; color: #6b7280; cursor: pointer; transition: all 0.15s; font-family: inherit; display: flex; align-items: center; gap: 5px; }
-.sort-btn.active { border-color: #3b82f6; background: #3b82f622; color: #60a5fa; }
-.sort-btn:hover { border-color: #4b5068; color: #94a3b8; }
-.sort-dir { font-size: 10px; }
+.sort-bar{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.sort-btn{padding:3px 10px;border-radius:2px;font-size:10px;font-weight:500;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;font-family:var(--mono);letter-spacing:.3px}
+.sort-btn.active{border-color:var(--amber);color:var(--amber);background:var(--amber4)}
+.sort-btn:hover{border-color:var(--text2);color:var(--text1)}
+.sort-dir{font-size:9px}
+.result-count{font-size:10px;color:var(--text2);margin-left:auto;font-family:var(--mono)}
 
-/* ─── DRIVE STATUS ─── */
-.drive-btn { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 10px; border: 1px solid #2a2d35; background: #12141a; color: #6b7280; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.2s; font-family: inherit; }
-.drive-btn:hover { border-color: #4b5068; color: #94a3b8; }
-.drive-btn.connected { border-color: #05966944; background: #05966911; color: #34d399; }
-.drive-btn.syncing { border-color: #3b82f644; background: #3b82f611; color: #60a5fa; }
-.drive-btn.error { border-color: #ef444444; background: #ef444411; color: #f87171; }
-.drive-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
-@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
-.drive-btn.syncing .drive-dot { animation: pulse 1.2s ease infinite; }
+/* ─── CARDS ─── */
+.query-card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;cursor:pointer;transition:all .15s;position:relative;overflow:hidden}
+.query-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:2px;background:transparent;transition:background .15s}
+.query-card:hover{border-color:var(--border2);background:var(--bg2)}
+.query-card:hover::before{background:var(--amber)}
+.query-card+.query-card{margin-top:6px}
+.card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.card-title{font-size:13px;font-weight:500;color:var(--text0);font-family:var(--sans);line-height:1.3}
+.card-desc{font-size:11px;color:var(--text2);margin-top:3px;font-family:var(--sans)}
+.card-date{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono)}
+.card-actions{display:flex;gap:4px;flex-shrink:0;opacity:0;transition:opacity .15s}
+.query-card:hover .card-actions{opacity:1}
+.card-sql{background:var(--bg0);border-radius:2px;padding:8px 10px;max-height:56px;overflow:hidden;margin-bottom:8px;border-left:2px solid var(--bg3)}
+.card-tags{display:flex;gap:5px;flex-wrap:wrap}
 
-@media (max-width: 768px) {
-  .sidebar { display: none; }
-  .header { padding: 16px; }
-  .main { padding: 16px; }
-  .header-actions { gap: 4px; }
-  .header-actions .btn { padding: 8px 12px; font-size: 12px; }
+/* ─── EMPTY STATE ─── */
+.empty{text-align:center;padding:60px 20px;color:var(--text2)}
+.empty-icon{font-size:32px;margin-bottom:12px;font-family:var(--mono);color:var(--text3)}
+.empty-title{font-size:13px;font-weight:500;color:var(--text1);font-family:var(--mono)}
+.empty-desc{font-size:11px;margin-top:6px;font-family:var(--mono);color:var(--text2)}
+
+/* ─── SQL HIGHLIGHT ─── */
+.sql-code{font-family:var(--mono);font-size:11px;line-height:1.7;white-space:pre-wrap;word-break:break-all}
+.sql-keyword{color:var(--amber);font-weight:500}
+.sql-string{color:var(--green)}
+.sql-number{color:#b8a0ff}
+.sql-comment{color:var(--text2);font-style:italic}
+.sql-operator{color:var(--text1)}
+.sql-default{color:var(--text0)}
+
+/* ─── MODAL ─── */
+.modal-overlay{position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;animation:fadeIn .15s ease}
+.modal{background:var(--bg1);border:1px solid var(--border2);border-radius:6px;width:90%;max-height:88vh;display:flex;flex-direction:column;box-shadow:0 32px 80px rgba(0,0,0,.6)}
+.modal-header{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;background:var(--bg2);border-radius:6px 6px 0 0}
+.modal-title{font-size:12px;font-weight:600;color:var(--amber);font-family:var(--mono);letter-spacing:.5px;text-transform:uppercase}
+.modal-close{background:none;border:none;color:var(--text2);font-size:16px;cursor:pointer;padding:2px 6px;border-radius:2px;font-family:var(--mono)}
+.modal-close:hover{color:var(--red)}
+.modal-body{padding:18px;overflow-y:auto;flex:1}
+
+/* ─── FORM ─── */
+.form-group{margin-bottom:14px}
+.form-row{display:flex;gap:6px}
+.form-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}
+
+/* ─── DB PILLS ─── */
+.db-pill{padding:3px 10px;border-radius:2px;font-size:11px;font-weight:500;border:1px solid var(--border2);background:transparent;color:var(--text2);cursor:pointer;transition:all .12s;font-family:var(--mono)}
+.db-pill.active{border-color:var(--cyan);background:var(--cyan2);color:var(--cyan)}
+.db-pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+
+/* ─── SQL VIEWER ─── */
+.sql-viewer{background:var(--bg0);border-radius:4px;padding:14px;border:1px solid var(--border);max-height:360px;overflow:auto;white-space:pre-wrap;margin-bottom:14px;border-left:2px solid var(--amber)}
+.sql-preview{background:var(--bg0);border-radius:4px;padding:10px;max-height:100px;overflow:auto;border:1px solid var(--border)}
+
+/* ─── FILE UPLOAD ─── */
+.file-upload{display:flex;align-items:center;justify-content:center;padding:20px;border:1px dashed var(--border2);border-radius:var(--r);cursor:pointer;color:var(--text2);font-size:12px;transition:all .15s;font-family:var(--mono)}
+.file-upload:hover{border-color:var(--amber);color:var(--amber)}
+.file-upload input{display:none}
+
+/* ─── TABLE ─── */
+.batch-table{width:100%;border-collapse:collapse;font-size:11px;font-family:var(--mono)}
+.batch-table th{padding:8px 10px;text-align:left;color:var(--text2);font-weight:500;border-bottom:1px solid var(--border);background:var(--bg2);position:sticky;top:0;z-index:1;letter-spacing:.5px;text-transform:uppercase;font-size:10px}
+.batch-table td{padding:6px 5px;border-bottom:1px solid var(--border)}
+.batch-table input[type="text"]{padding:3px 7px;font-size:11px}
+.batch-table-wrap{max-height:380px;overflow-y:auto;border-radius:var(--r);border:1px solid var(--border)}
+.batch-sql-preview{background:var(--bg0);border-radius:2px;padding:5px;max-height:36px;overflow:hidden}
+
+/* ─── ITEM ROW ─── */
+.item-row{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r)}
+.item-row+.item-row{margin-top:4px}
+.item-count{color:var(--text2);font-size:11px;flex:1;font-family:var(--mono)}
+
+/* ─── TOAST ─── */
+.toast{position:fixed;top:16px;right:16px;z-index:9999;padding:10px 16px;border-radius:var(--r);font-size:12px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,.4);animation:toastIn .2s ease;font-family:var(--mono);letter-spacing:.2px;border:1px solid}
+.toast-success{background:var(--green2);color:var(--green);border-color:var(--green)}
+.toast-warn{background:#2a1e00;color:#f0a500;border-color:#f0a500}
+.toast-error{background:var(--red2);color:var(--red);border-color:var(--red)}
+
+/* ─── DRIVE BTN ─── */
+.drive-btn{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:var(--r);border:1px solid var(--border2);background:transparent;color:var(--text2);font-size:11px;font-weight:500;cursor:pointer;transition:all .15s;font-family:var(--mono)}
+.drive-btn:hover{border-color:var(--text2);color:var(--text1)}
+.drive-btn.connected{border-color:var(--cyan);color:var(--cyan);background:var(--cyan2)}
+.drive-btn.syncing{border-color:var(--amber);color:var(--amber);background:var(--amber4)}
+.drive-btn.error{border-color:var(--red);color:var(--red);background:var(--red2)}
+.drive-dot{width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0}
+.drive-btn.syncing .drive-dot{animation:pulse 1s ease infinite}
+
+@media(max-width:768px){
+  .sidebar{display:none}
+  .header{padding:0 16px}
+  .main{padding:14px}
 }
 </style>
 </head>
 <body>
-
 <div id="app"></div>
-
 <script>
-// ═══════════════════════════════════════════════════
-// SQL QUERY MANAGER - v2.0 (Drive Sync + Sort)
-// ═══════════════════════════════════════════════════
+const GDRIVE_CLIENT_ID='742085025396-7s3k6evr07j9m329ljquucv7mk1qijnn.apps.googleusercontent.com';
+const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
+const GDRIVE_FILENAME='sql-query-manager-backup.json';
+const STORAGE_KEY="sqlqm-alldata";
+const DEFAULT_CATEGORIES=["General","Reportes","Mantenimiento","Auditoría","Consultas frecuentes"];
+const DEFAULT_DATABASES=["Oracle_Prod","MySQL_Dev","PostgreSQL_Analytics"];
 
-const GDRIVE_CLIENT_ID = '742085025396-7s3k6evr07j9m329ljquucv7mk1qijnn.apps.googleusercontent.com';
-const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
-const GDRIVE_FILENAME = 'sql-query-manager-backup.json';
+const SQL_KEYWORDS=new Set(["SELECT","FROM","WHERE","INSERT","INTO","VALUES","UPDATE","SET","DELETE","CREATE","TABLE","DROP","ALTER","ADD","COLUMN","INDEX","VIEW","JOIN","INNER","LEFT","RIGHT","OUTER","CROSS","ON","AND","OR","NOT","IN","BETWEEN","LIKE","IS","NULL","AS","ORDER","BY","GROUP","HAVING","DISTINCT","LIMIT","OFFSET","UNION","ALL","EXISTS","CASE","WHEN","THEN","ELSE","END","COUNT","SUM","AVG","MIN","MAX","WITH","RECURSIVE","OVER","PARTITION","ROW_NUMBER","RANK","DENSE_RANK","FETCH","NEXT","ROWS","ONLY","TOP","DESC","ASC","PRIMARY","KEY","FOREIGN","REFERENCES","CONSTRAINT","DEFAULT","CHECK","UNIQUE","CASCADE","TRUNCATE","MERGE","USING","MATCHED","BEGIN","COMMIT","ROLLBACK","TRANSACTION","GRANT","REVOKE","EXEC","EXECUTE","PROCEDURE","FUNCTION","TRIGGER","DECLARE","CURSOR","OPEN","CLOSE","DEALLOCATE","IF","WHILE","RETURN","PRINT","GO","USE","DATABASE","SCHEMA","COALESCE","IFNULL","NVL","CAST","CONVERT","SUBSTRING","REPLACE","TRIM","UPPER","LOWER","LENGTH","CHAR_LENGTH","CONCAT","DATE","YEAR","MONTH","DAY","HOUR","MINUTE","SECOND","NOW","GETDATE","SYSDATE","DUAL","ROWNUM","LEVEL","CONNECT","START","PRIOR","MINUS","INTERSECT","EXCEPT","PIVOT","UNPIVOT","LATERAL","LAG","LEAD","FIRST_VALUE","LAST_VALUE","NTH_VALUE","NTILE","PERCENT_RANK","CUME_DIST","LISTAGG","STRING_AGG","GROUP_CONCAT","BOOLEAN","INT","INTEGER","BIGINT","SMALLINT","FLOAT","DOUBLE","DECIMAL","NUMERIC","VARCHAR","CHAR","TEXT","BLOB","CLOB","TIMESTAMP","DATETIME","NUMBER","VARCHAR2","NVARCHAR","NCHAR","TRUE","FALSE","TEMPORARY","TEMP","MATERIALIZED","EXPLAIN","ANALYZE"]);
 
-const STORAGE_KEY = "sqlqm-alldata";
-const DEFAULT_CATEGORIES = ["General", "Reportes", "Mantenimiento", "Auditoría", "Consultas frecuentes"];
-const DEFAULT_DATABASES = ["Oracle_Prod", "MySQL_Dev", "PostgreSQL_Analytics"];
+let state={queries:[],categories:[],databases:[],activeTab:"queries",search:"",filterCat:"",filterDb:"",sortField:"createdAt",sortDir:"desc"};
+let _idCounter=Date.now();
+const genId=()=>`q_${_idCounter++}`;
 
-const SQL_KEYWORDS = new Set([
-  "SELECT","FROM","WHERE","INSERT","INTO","VALUES","UPDATE","SET","DELETE",
-  "CREATE","TABLE","DROP","ALTER","ADD","COLUMN","INDEX","VIEW","JOIN",
-  "INNER","LEFT","RIGHT","OUTER","CROSS","ON","AND","OR","NOT","IN",
-  "BETWEEN","LIKE","IS","NULL","AS","ORDER","BY","GROUP","HAVING",
-  "DISTINCT","LIMIT","OFFSET","UNION","ALL","EXISTS","CASE","WHEN",
-  "THEN","ELSE","END","COUNT","SUM","AVG","MIN","MAX","WITH","RECURSIVE",
-  "OVER","PARTITION","ROW_NUMBER","RANK","DENSE_RANK","FETCH","NEXT",
-  "ROWS","ONLY","TOP","DESC","ASC","PRIMARY","KEY","FOREIGN","REFERENCES",
-  "CONSTRAINT","DEFAULT","CHECK","UNIQUE","CASCADE","TRUNCATE","MERGE",
-  "USING","MATCHED","BEGIN","COMMIT","ROLLBACK","TRANSACTION","GRANT",
-  "REVOKE","EXEC","EXECUTE","PROCEDURE","FUNCTION","TRIGGER","DECLARE",
-  "CURSOR","OPEN","CLOSE","DEALLOCATE","IF","WHILE","RETURN","PRINT",
-  "GO","USE","DATABASE","SCHEMA","COALESCE","IFNULL","NVL","CAST",
-  "CONVERT","SUBSTRING","REPLACE","TRIM","UPPER","LOWER","LENGTH",
-  "CHAR_LENGTH","CONCAT","DATE","YEAR","MONTH","DAY","HOUR","MINUTE",
-  "SECOND","NOW","GETDATE","SYSDATE","DUAL","ROWNUM","LEVEL","CONNECT",
-  "START","PRIOR","MINUS","INTERSECT","EXCEPT","PIVOT","UNPIVOT",
-  "LATERAL","LAG","LEAD","FIRST_VALUE","LAST_VALUE","NTH_VALUE","NTILE",
-  "PERCENT_RANK","CUME_DIST","LISTAGG","STRING_AGG","GROUP_CONCAT",
-  "BOOLEAN","INT","INTEGER","BIGINT","SMALLINT","FLOAT","DOUBLE",
-  "DECIMAL","NUMERIC","VARCHAR","CHAR","TEXT","BLOB","CLOB",
-  "TIMESTAMP","DATETIME","NUMBER","VARCHAR2","NVARCHAR","NCHAR",
-  "TRUE","FALSE","TEMPORARY","TEMP","MATERIALIZED","EXPLAIN","ANALYZE"
-]);
-
-// ─── State ───
-let state = {
-  queries: [],
-  categories: [],
-  databases: [],
-  activeTab: "queries",
-  search: "",
-  filterCat: "",
-  filterDb: "",
-  sortField: "createdAt",
-  sortDir: "desc"
-};
-let _idCounter = Date.now();
-const genId = () => `q_${_idCounter++}`;
-
-// ─── Storage ───
-function loadState() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const saved = JSON.parse(raw);
-      state.queries = saved.queries || [];
-      state.categories = saved.categories || [];
-      state.databases = saved.databases || [];
-    } else {
-      // First time ever — load defaults
-      state.categories = [...DEFAULT_CATEGORIES];
-      state.databases = [...DEFAULT_DATABASES];
-    }
-  } catch(e) {
-    state.categories = [...DEFAULT_CATEGORIES];
-    state.databases = [...DEFAULT_DATABASES];
-  }
+function loadState(){
+  try{
+    const raw=localStorage.getItem(STORAGE_KEY);
+    if(raw){const s=JSON.parse(raw);state.queries=s.queries||[];state.categories=s.categories||[];state.databases=s.databases||[];}
+    else{state.categories=[...DEFAULT_CATEGORIES];state.databases=[...DEFAULT_DATABASES];}
+  }catch(e){state.categories=[...DEFAULT_CATEGORIES];state.databases=[...DEFAULT_DATABASES];}
 }
-
-function saveState() {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      queries: state.queries,
-      categories: state.categories,
-      databases: state.databases,
-      savedAt: new Date().toISOString()
-    }));
+function saveState(){
+  try{
+    localStorage.setItem(STORAGE_KEY,JSON.stringify({queries:state.queries,categories:state.categories,databases:state.databases,savedAt:new Date().toISOString()}));
     scheduleDriveSync();
-  } catch(e) { console.error("Save failed:", e); }
+  }catch(e){console.error("Save failed:",e);}
 }
 
-// ─── Google Drive Sync ───
-let driveToken = null;
-let driveFileId = null;
-let driveStatus = 'disconnected'; // disconnected | connected | syncing | error
-let driveUserName = '';
-let driveSyncTimer = null;
-
-function getDriveStatusLabel() {
-  if (driveStatus === 'syncing') return { label: 'Sincronizando...', cls: 'syncing' };
-  if (driveStatus === 'error') return { label: 'Error Drive — Reintentar', cls: 'error' };
-  if (driveStatus === 'connected') return { label: driveUserName ? `Drive: ${driveUserName}` : 'Drive conectado', cls: 'connected' };
-  // disconnected
-  if (driveUserName) return { label: `Reconectar Drive (${driveUserName})`, cls: '' };
-  return { label: 'Conectar Drive', cls: '' };
+// ─── Drive ───
+let driveToken=null,driveFileId=null,driveStatus='disconnected',driveUserName='',driveSyncTimer=null;
+function getDriveStatusLabel(){
+  if(driveStatus==='syncing')return{label:'Sincronizando...',cls:'syncing'};
+  if(driveStatus==='error')return{label:'Error — Reintentar',cls:'error'};
+  if(driveStatus==='connected')return{label:driveUserName?`${driveUserName}`:'Drive OK',cls:'connected'};
+  if(driveUserName)return{label:`Reconectar`,cls:''};
+  return{label:'Conectar Drive',cls:''};
 }
-
-function initDriveToken() {
-  // OAuth tokens expire in ~1hr — never persist them across sessions.
-  // Only persist fileId and user name for UX hints.
-  const savedFileId = localStorage.getItem('sqlqm-drive-fileid');
-  const savedUser = localStorage.getItem('sqlqm-drive-user');
-  driveFileId = savedFileId || null;
-  driveUserName = savedUser || '';
-  driveStatus = 'disconnected';
-  driveToken = null;
+function initDriveToken(){
+  driveFileId=localStorage.getItem('sqlqm-drive-fileid')||null;
+  driveUserName=localStorage.getItem('sqlqm-drive-user')||'';
+  driveStatus='disconnected';driveToken=null;
 }
-
-function connectDrive() {
-  if (driveStatus === 'connected') {
-    if (!confirm(`Desconectar tu cuenta de Google Drive (${driveUserName})? Tus datos locales se mantienen.`)) return;
-    driveToken = null; driveFileId = null; driveUserName = '';
-    driveStatus = 'disconnected';
-    localStorage.removeItem('sqlqm-drive-fileid');
-    localStorage.removeItem('sqlqm-drive-user');
-    updateDriveButton();
-    return;
+function connectDrive(){
+  if(driveStatus==='connected'){
+    if(!confirm(`Desconectar de Google Drive (${driveUserName})? Tus datos locales se mantienen.`))return;
+    driveToken=null;driveFileId=null;driveUserName='';driveStatus='disconnected';
+    localStorage.removeItem('sqlqm-drive-fileid');localStorage.removeItem('sqlqm-drive-user');
+    updateDriveButton();return;
   }
-
-  const client = google.accounts.oauth2.initTokenClient({
-    client_id: GDRIVE_CLIENT_ID,
-    scope: GDRIVE_SCOPE,
-    callback: async (tokenResponse) => {
-      if (tokenResponse.error) { driveStatus = 'error'; updateDriveButton(); return; }
-      driveToken = tokenResponse.access_token;
-      
-      driveStatus = 'syncing';
-      updateDriveButton();
-      // Get user name
-      try {
-        const r = await fetch('https://www.googleapis.com/oauth2/v1/userinfo', { headers: { Authorization: `Bearer ${driveToken}` } });
-        const u = await r.json();
-        driveUserName = u.given_name || u.name || u.email || 'Usuario';
-        localStorage.setItem('sqlqm-drive-user', driveUserName);
-      } catch(e) {}
+  const client=google.accounts.oauth2.initTokenClient({client_id:GDRIVE_CLIENT_ID,scope:GDRIVE_SCOPE,
+    callback:async(tr)=>{
+      if(tr.error){driveStatus='error';updateDriveButton();return;}
+      driveToken=tr.access_token;driveStatus='syncing';updateDriveButton();
+      try{const r=await fetch('https://www.googleapis.com/oauth2/v1/userinfo',{headers:{Authorization:`Bearer ${driveToken}`}});const u=await r.json();driveUserName=u.given_name||u.name||u.email||'Usuario';localStorage.setItem('sqlqm-drive-user',driveUserName);}catch(e){}
       await loadFromDrive();
     }
   });
   client.requestAccessToken();
 }
-
-async function findOrCreateDriveFile() {
-  // Search in regular Drive
-  const searchRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files?q=name='${GDRIVE_FILENAME}'+and+trashed=false&fields=files(id,name)`,
-    { headers: { Authorization: `Bearer ${driveToken}` } }
-  );
-  const searchData = await searchRes.json();
-  if (searchData.files && searchData.files.length > 0) {
-    driveFileId = searchData.files[0].id;
-    localStorage.setItem('sqlqm-drive-fileid', driveFileId);
-    return driveFileId;
-  }
-  // Create new file in Drive root
-  const meta = { name: GDRIVE_FILENAME, mimeType: 'application/json' };
-  const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${driveToken}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(meta)
-  });
-  const createData = await createRes.json();
-  driveFileId = createData.id;
-  localStorage.setItem('sqlqm-drive-fileid', driveFileId);
-  return driveFileId;
+async function findOrCreateDriveFile(){
+  const sr=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${GDRIVE_FILENAME}'+and+trashed=false&fields=files(id,name)`,{headers:{Authorization:`Bearer ${driveToken}`}});
+  const sd=await sr.json();
+  if(sd.files&&sd.files.length>0){driveFileId=sd.files[0].id;localStorage.setItem('sqlqm-drive-fileid',driveFileId);return driveFileId;}
+  const cr=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:`Bearer ${driveToken}`,'Content-Type':'application/json'},body:JSON.stringify({name:GDRIVE_FILENAME,mimeType:'application/json'})});
+  const cd=await cr.json();driveFileId=cd.id;localStorage.setItem('sqlqm-drive-fileid',driveFileId);return driveFileId;
 }
-
-async function loadFromDrive() {
-  if (!driveToken) return;
-  driveStatus = 'syncing'; updateDriveButton();
-  try {
-    const fileId = driveFileId || await findOrCreateDriveFile();
-    if (!fileId) { driveStatus = 'connected'; updateDriveButton(); return; }
-    const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
-      headers: { Authorization: `Bearer ${driveToken}` }
-    });
-    if (res.status === 404) { driveStatus = 'connected'; updateDriveButton(); scheduleDriveSync(); return; }
-    if (!res.ok) throw new Error('Load failed');
-    const text = await res.text();
-    if (text && text.trim().startsWith('{')) {
-      const data = JSON.parse(text);
-      if (data.queries && data.queries.length > 0) {
-        const driveDate = data.savedAt ? new Date(data.savedAt) : new Date(0);
-        const localSaved = localStorage.getItem(STORAGE_KEY);
-        const localData = localSaved ? JSON.parse(localSaved) : null;
-        const localDate = localData && localData.savedAt ? new Date(localData.savedAt) : new Date(0);
-        const localHasData = localData && localData.queries && localData.queries.length > 0;
-
-        if (localHasData && localDate > driveDate) {
-          // Local is newer — ask user which to keep
-          const keepLocal = confirm(
-            `Drive tiene ${data.queries.length} consultas (${driveDate.toLocaleString('es-CO')}).\n` +
-            `Local tiene ${localData.queries.length} consultas (${localDate.toLocaleString('es-CO')}).\n\n` +
-            `¿Mantener datos LOCALES y subir a Drive?\n(Cancelar = cargar datos de Drive)`
-          );
-          if (keepLocal) {
-            // Push local to Drive
-            driveStatus = 'connected'; updateDriveButton();
-            await saveToDrive();
-            showToast(`Drive actualizado con ${state.queries.length} consultas locales`);
-            return;
-          }
+async function loadFromDrive(){
+  if(!driveToken)return;driveStatus='syncing';updateDriveButton();
+  try{
+    const fileId=driveFileId||await findOrCreateDriveFile();
+    if(!fileId){driveStatus='connected';updateDriveButton();return;}
+    const res=await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,{headers:{Authorization:`Bearer ${driveToken}`}});
+    if(res.status===404){driveStatus='connected';updateDriveButton();scheduleDriveSync();return;}
+    if(!res.ok)throw new Error('Load failed');
+    const text=await res.text();
+    if(text&&text.trim().startsWith('{')){
+      const data=JSON.parse(text);
+      if(data.queries&&data.queries.length>0){
+        const driveDate=data.savedAt?new Date(data.savedAt):new Date(0);
+        const localSaved=localStorage.getItem(STORAGE_KEY);const localData=localSaved?JSON.parse(localSaved):null;
+        const localDate=localData&&localData.savedAt?new Date(localData.savedAt):new Date(0);
+        const localHasData=localData&&localData.queries&&localData.queries.length>0;
+        if(localHasData&&localDate>driveDate){
+          const keepLocal=confirm(`Drive: ${data.queries.length} consultas (${driveDate.toLocaleString('es-CO')}).\nLocal: ${localData.queries.length} consultas (${localDate.toLocaleString('es-CO')}).\n\n¿Mantener LOCAL y subir a Drive?\n(Cancelar = cargar Drive)`);
+          if(keepLocal){driveStatus='connected';updateDriveButton();await saveToDrive();showToast(`Drive actualizado con ${state.queries.length} consultas`);return;}
         }
-        // Load Drive data
-        state.queries = data.queries || [];
-        state.categories = data.categories && data.categories.length > 0 ? data.categories : state.categories;
-        state.databases = data.databases && data.databases.length > 0 ? data.databases : state.databases;
-        saveState();
-        render();
-        showToast(`Drive: ${state.queries.length} consultas cargadas`);
-      } else {
-        // Drive file is empty — push local data up
-        driveStatus = 'connected'; updateDriveButton();
-        await saveToDrive();
-        showToast('Drive sincronizado');
-        return;
-      }
+        state.queries=data.queries||[];
+        state.categories=data.categories&&data.categories.length>0?data.categories:state.categories;
+        state.databases=data.databases&&data.databases.length>0?data.databases:state.databases;
+        saveState();render();showToast(`Drive: ${state.queries.length} consultas cargadas`);
+      }else{driveStatus='connected';updateDriveButton();await saveToDrive();showToast('Drive sincronizado');return;}
     }
-    driveStatus = 'connected'; updateDriveButton();
-  } catch(e) {
-    if (e.message && e.message.includes('401')) {
-      driveToken = null;
-      driveStatus = 'disconnected';
-    } else {
-      driveStatus = 'error';
-    }
+    driveStatus='connected';updateDriveButton();
+  }catch(e){
+    if(e.message&&e.message.includes('401')){driveToken=null;driveStatus='disconnected';}
+    else driveStatus='error';
     updateDriveButton();
   }
 }
-
-async function saveToDrive() {
-  if (!driveToken || driveStatus === 'disconnected') return;
-  try {
-    const fileId = driveFileId || await findOrCreateDriveFile();
-    if (!fileId) return;
-    const payload = JSON.stringify({ queries: state.queries, categories: state.categories, databases: state.databases, savedAt: new Date().toISOString() });
-    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`, {
-      method: 'PATCH',
-      headers: { Authorization: `Bearer ${driveToken}`, 'Content-Type': 'application/json' },
-      body: payload
-    });
-    driveStatus = 'connected'; updateDriveButton();
-  } catch(e) {
-    driveStatus = 'error'; updateDriveButton();
-  }
+async function saveToDrive(){
+  if(!driveToken||driveStatus==='disconnected')return;
+  try{
+    const fileId=driveFileId||await findOrCreateDriveFile();if(!fileId)return;
+    await fetch(`https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,{method:'PATCH',headers:{Authorization:`Bearer ${driveToken}`,'Content-Type':'application/json'},body:JSON.stringify({queries:state.queries,categories:state.categories,databases:state.databases,savedAt:new Date().toISOString()})});
+    driveStatus='connected';updateDriveButton();
+  }catch(e){driveStatus='error';updateDriveButton();}
+}
+function scheduleDriveSync(){clearTimeout(driveSyncTimer);driveSyncTimer=setTimeout(()=>saveToDrive(),1500);}
+function updateDriveButton(){
+  const btn=document.getElementById('drive-btn');if(!btn)return;
+  const{label,cls}=getDriveStatusLabel();
+  btn.className=`drive-btn ${cls}`;
+  btn.innerHTML=`<span class="drive-dot"></span>${label}`;
 }
 
-function scheduleDriveSync() {
-  clearTimeout(driveSyncTimer);
-  driveSyncTimer = setTimeout(() => saveToDrive(), 1500);
+// ─── Sort ───
+const SORT_OPTIONS=[{field:'createdAt',label:'Fecha'},{field:'name',label:'Nombre'},{field:'category',label:'Categoría'}];
+function setSort(field){
+  if(state.sortField===field)state.sortDir=state.sortDir==='asc'?'desc':'asc';
+  else{state.sortField=field;state.sortDir=field==='createdAt'?'desc':'asc';}
+  const listEl=document.getElementById('queries-list');if(listEl)listEl.innerHTML=renderQueryList();
+  const sb=document.getElementById('sort-bar');if(sb)sb.innerHTML=renderSortBar();
 }
-
-function updateDriveButton() {
-  const btn = document.getElementById('drive-btn');
-  if (!btn) return;
-  const { label, cls } = getDriveStatusLabel();
-  btn.className = `drive-btn ${cls}`;
-  btn.innerHTML = `<span class="drive-dot"></span>${label}`;
+function renderSortBar(){
+  const di=state.sortDir==='asc'?'↑':'↓';
+  return SORT_OPTIONS.map(o=>`<button class="sort-btn ${state.sortField===o.field?'active':''}" onclick="setSort('${o.field}')">${o.label}${state.sortField===o.field?` <span class="sort-dir">${di}</span>`:''}</button>`).join('')+`<span class="result-count">${getFiltered().length} resultado${getFiltered().length!==1?'s':''}</span>`;
 }
-
-// ─── Sort Logic ───
-const SORT_OPTIONS = [
-  { field: 'createdAt', label: 'Fecha' },
-  { field: 'name', label: 'Nombre' },
-  { field: 'category', label: 'Categoría' },
-];
-
-function setSort(field) {
-  if (state.sortField === field) {
-    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
-  } else {
-    state.sortField = field;
-    state.sortDir = field === 'createdAt' ? 'desc' : 'asc';
-  }
-  const listEl = document.getElementById('queries-list');
-  if (listEl) listEl.innerHTML = renderQueryList();
-  const sortBar = document.getElementById('sort-bar');
-  if (sortBar) sortBar.innerHTML = renderSortBar();
-}
-
-function renderSortBar() {
-  const dirIcon = state.sortDir === 'asc' ? '↑' : '↓';
-  return SORT_OPTIONS.map(opt => `
-    <button class="sort-btn ${state.sortField === opt.field ? 'active' : ''}" onclick="setSort('${opt.field}')">
-      ${opt.label}
-      ${state.sortField === opt.field ? `<span class="sort-dir">${dirIcon}</span>` : ''}
-    </button>
-  `).join('') + `<span style="font-size:11px;color:#4b5068;margin-left:4px">${getFiltered().length} resultado${getFiltered().length!==1?'s':''}</span>`;
-}
-
-function getSorted(queries) {
-  return [...queries].sort((a, b) => {
-    let va = a[state.sortField] || '';
-    let vb = b[state.sortField] || '';
-    if (state.sortField === 'createdAt') {
-      va = va ? new Date(va).getTime() : 0;
-      vb = vb ? new Date(vb).getTime() : 0;
-      return state.sortDir === 'asc' ? va - vb : vb - va;
-    }
-    va = va.toLowerCase(); vb = vb.toLowerCase();
-    const cmp = va.localeCompare(vb, 'es');
-    return state.sortDir === 'asc' ? cmp : -cmp;
+function getSorted(queries){
+  return[...queries].sort((a,b)=>{
+    let va=a[state.sortField]||'',vb=b[state.sortField]||'';
+    if(state.sortField==='createdAt'){va=va?new Date(va).getTime():0;vb=vb?new Date(vb).getTime():0;return state.sortDir==='asc'?va-vb:vb-va;}
+    va=va.toLowerCase();vb=vb.toLowerCase();const cmp=va.localeCompare(vb,'es');return state.sortDir==='asc'?cmp:-cmp;
   });
 }
 
-
-function esc(str) {
-  const div = document.createElement('div');
-  div.textContent = str;
-  return div.innerHTML;
-}
-
-function highlightSQL(sql, small) {
-  if (!sql) return '<span class="sql-comment">-- Sin consulta</span>';
-  const tokens = sql.split(/(\b\w+\b|'[^']*'|"[^"]*"|--[^\n]*|\n|[^\w\s'"-]+|\s+)/g).filter(Boolean);
-  return tokens.map(token => {
-    if (/^--/.test(token)) return `<span class="sql-comment">${esc(token)}</span>`;
-    if (/^['"]/.test(token)) return `<span class="sql-string">${esc(token)}</span>`;
-    if (SQL_KEYWORDS.has(token.toUpperCase())) return `<span class="sql-keyword">${esc(token)}</span>`;
-    if (/^\d+(\.\d+)?$/.test(token)) return `<span class="sql-number">${esc(token)}</span>`;
-    if (/^[^\w\s]/.test(token)) return `<span class="sql-operator">${esc(token)}</span>`;
-    return `<span class="sql-default">${esc(token)}</span>`;
+// ─── Helpers ───
+function esc(str){const div=document.createElement('div');div.textContent=str;return div.innerHTML;}
+function highlightSQL(sql){
+  if(!sql)return'<span class="sql-comment">-- sin consulta</span>';
+  const tokens=sql.split(/(\b\w+\b|'[^']*'|"[^"]*"|--[^\n]*|\n|[^\w\s\'""-]+|\s+)/g).filter(Boolean);
+  return tokens.map(token=>{
+    if(/^--/.test(token))return`<span class="sql-comment">${esc(token)}</span>`;
+    if(/^['"]/.test(token))return`<span class="sql-string">${esc(token)}</span>`;
+    if(SQL_KEYWORDS.has(token.toUpperCase()))return`<span class="sql-keyword">${esc(token)}</span>`;
+    if(/^\d+(\.\d+)?$/.test(token))return`<span class="sql-number">${esc(token)}</span>`;
+    if(/^[^\w\s]/.test(token))return`<span class="sql-operator">${esc(token)}</span>`;
+    return`<span class="sql-default">${esc(token)}</span>`;
   }).join('');
 }
 
-function formatSQL(sql) {
-  if (!sql || !sql.trim()) return sql;
-
-  // Normalize whitespace
-  let input = sql.replace(/\r\n/g, '\n').replace(/\t/g, ' ');
-  input = input.replace(/  +/g, ' ').trim();
-
-  const INDENT = '       '; // 7 spaces to align after "SELECT "
-  const KW_INDENT = '  ';   // indent for AND/OR under WHERE
-  const SUB_INDENT = '        '; // 8 spaces for subquery content
-
-  // Tokenize: split into meaningful parts preserving strings and parens
-  function tokenize(s) {
-    const tokens = [];
-    let i = 0;
-    while (i < s.length) {
-      // Skip whitespace
-      if (s[i] === ' ' || s[i] === '\n') { i++; continue; }
-      // String literal
-      if (s[i] === "'") {
-        let j = i + 1;
-        while (j < s.length && (s[j] !== "'" || s[j+1] === "'")) {
-          if (s[j] === "'" && s[j+1] === "'") j += 2; else j++;
-        }
-        tokens.push(s.substring(i, j + 1)); i = j + 1; continue;
-      }
-      // Parens
-      if (s[i] === '(' || s[i] === ')') { tokens.push(s[i]); i++; continue; }
-      // Comma
-      if (s[i] === ',') { tokens.push(','); i++; continue; }
-      // Semicolon
-      if (s[i] === ';') { tokens.push(';'); i++; continue; }
-      // Operators and symbols
-      if ('=<>!+-*/|&'.includes(s[i])) {
-        let j = i;
-        while (j < s.length && '=<>!+-*/|&'.includes(s[j])) j++;
-        tokens.push(s.substring(i, j)); i = j; continue;
-      }
-      // Word / identifier
-      let j = i;
-      while (j < s.length && s[j] !== ' ' && s[j] !== '\n' && s[j] !== '(' && s[j] !== ')' && s[j] !== ',' && s[j] !== ';' && s[j] !== "'" && !'=<>!+-*/|&'.includes(s[j])) j++;
-      if (j > i) { tokens.push(s.substring(i, j)); i = j; }
-      else i++;
+function formatSQL(sql){
+  if(!sql||!sql.trim())return sql;
+  let input=sql.replace(/\r\n/g,'\n').replace(/\t/g,' ');input=input.replace(/  +/g,' ').trim();
+  const INDENT='       ',SUB_INDENT='        ';
+  function tokenize(s){const tokens=[];let i=0;while(i<s.length){if(s[i]===' '||s[i]==='\n'){i++;continue;}if(s[i]==="'"){let j=i+1;while(j<s.length&&(s[j]!=="'"||s[j+1]==="'")){if(s[j]==="'"&&s[j+1]==="'")j+=2;else j++;}tokens.push(s.substring(i,j+1));i=j+1;continue;}if(s[i]==='('||s[i]===')'){tokens.push(s[i]);i++;continue;}if(s[i]===','){tokens.push(',');i++;continue;}if(s[i]===';'){tokens.push(';');i++;continue;}if('=<>!+-*/|&'.includes(s[i])){let j=i;while(j<s.length&&'=<>!+-*/|&'.includes(s[j]))j++;tokens.push(s.substring(i,j));i=j;continue;}let j=i;while(j<s.length&&s[j]!==' '&&s[j]!=='\n'&&s[j]!=='('&&s[j]!==')'&&s[j]!==','&&s[j]!==';'&&s[j]!=="'"&&!'=<>!+-*/|&'.includes(s[j]))j++;if(j>i){tokens.push(s.substring(i,j));i=j;}else i++;}return tokens;}
+  const MAJOR_KW=new Set(['SELECT','FROM','WHERE','ORDER','GROUP','HAVING','LIMIT','OFFSET','UNION','INTERSECT','EXCEPT','MINUS','INSERT','UPDATE','DELETE','SET','VALUES','INTO','CREATE','ALTER','DROP','WITH','MERGE','USING','MATCHED']);
+  const JOIN_KW=new Set(['JOIN','INNER','LEFT','RIGHT','FULL','CROSS','OUTER','NATURAL']);
+  const SUB_KW=new Set(['AND','OR','ON']);
+  function isKeyword(t){return t&&MAJOR_KW.has(t.toUpperCase());}
+  function isJoinStart(t){return t&&JOIN_KW.has(t.toUpperCase());}
+  function isSubKw(t){return t&&SUB_KW.has(t.toUpperCase());}
+  function collectJoin(tokens,start){const parts=[];let i=start;while(i<tokens.length&&JOIN_KW.has(tokens[i].toUpperCase())){parts.push(tokens[i].toUpperCase());i++;}return{phrase:parts.join(' '),consumed:i-start};}
+  function formatBlock(tokens,baseIndent){
+    const lines=[];let currentLine='';let i=0;let selectIndent=baseIndent+INDENT;
+    function pushLine(){if(currentLine.trim())lines.push(currentLine);currentLine='';}
+    while(i<tokens.length){
+      const t=tokens[i];const tUp=t.toUpperCase();
+      if(t==='('){let depth=1;let j=i+1;while(j<tokens.length&&depth>0){if(tokens[j]==='(')depth++;if(tokens[j]===')')depth--;j++;}const innerTokens=tokens.slice(i+1,j-1);const isSub=innerTokens.length>0&&innerTokens[0].toUpperCase()==='SELECT';if(isSub){const subFormatted=formatBlock(innerTokens,baseIndent+SUB_INDENT);currentLine+='(';pushLine();lines.push(...subFormatted.split('\n'));currentLine=baseIndent+')';if(j<tokens.length&&tokens[j]!==','&&tokens[j]!==')'&&!isKeyword(tokens[j])&&!isJoinStart(tokens[j])&&!isSubKw(tokens[j])&&tokens[j]!==';'){currentLine+=' '+tokens[j];j++;}}else{currentLine+='('+innerTokens.join(' ')+')';}i=j;continue;}
+      if(t===')'){currentLine+=')';i++;continue;}
+      if(t===','){currentLine+=',';pushLine();currentLine=selectIndent;i++;continue;}
+      if(t===';'){currentLine+=';';pushLine();i++;continue;}
+      if(isKeyword(t)){pushLine();if(tUp==='ORDER'||tUp==='GROUP'){if(i+1<tokens.length&&tokens[i+1].toUpperCase()==='BY'){currentLine=baseIndent+tUp+' BY';selectIndent=baseIndent+' '.repeat(tUp.length+4);i+=2;continue;}}currentLine=baseIndent+tUp;selectIndent=baseIndent+' '.repeat(tUp.length+1);i++;continue;}
+      if(isJoinStart(t)){pushLine();const{phrase,consumed}=collectJoin(tokens,i);currentLine=baseIndent+phrase;selectIndent=baseIndent+' '.repeat(phrase.length+1);i+=consumed;continue;}
+      if(isSubKw(t)){pushLine();currentLine=baseIndent+tUp+' '.repeat(Math.max(1,5-tUp.length));i++;continue;}
+      if(currentLine.trim())currentLine+=' '+t;else currentLine=(currentLine||baseIndent)+t;i++;
     }
-    return tokens;
+    pushLine();return lines.join('\n');
   }
-
-  // Major keywords that start a new line at current indent level
-  const MAJOR_KW = new Set(['SELECT','FROM','WHERE','ORDER','GROUP','HAVING','LIMIT','OFFSET',
-    'UNION','INTERSECT','EXCEPT','MINUS','INSERT','UPDATE','DELETE','SET','VALUES',
-    'INTO','CREATE','ALTER','DROP','WITH','MERGE','USING','MATCHED']);
-  // Join keywords
-  const JOIN_KW = new Set(['JOIN','INNER','LEFT','RIGHT','FULL','CROSS','OUTER','NATURAL']);
-  // Sub-clause keywords that indent under WHERE
-  const SUB_KW = new Set(['AND','OR','ON']);
-
-  function isKeyword(t) { return t && MAJOR_KW.has(t.toUpperCase()); }
-  function isJoinStart(t) { return t && JOIN_KW.has(t.toUpperCase()); }
-  function isSubKw(t) { return t && SUB_KW.has(t.toUpperCase()); }
-
-  // Collect a join phrase like "LEFT OUTER JOIN" or "INNER JOIN"
-  function collectJoin(tokens, start) {
-    const parts = [];
-    let i = start;
-    while (i < tokens.length && JOIN_KW.has(tokens[i].toUpperCase())) {
-      parts.push(tokens[i].toUpperCase());
-      i++;
-    }
-    return { phrase: parts.join(' '), consumed: i - start };
-  }
-
-  // Check if a paren group is a scalar subquery (starts with SELECT)
-  function isSubquery(tokens, openIdx) {
-    for (let i = openIdx + 1; i < tokens.length; i++) {
-      if (tokens[i] === ' ') continue;
-      return tokens[i].toUpperCase() === 'SELECT';
-    }
-    return false;
-  }
-
-  // Format a block of tokens with given base indentation
-  function formatBlock(tokens, baseIndent) {
-    const lines = [];
-    let currentLine = '';
-    let i = 0;
-    let afterSelect = false;
-    let selectIndent = baseIndent + INDENT;
-
-    function pushLine() {
-      if (currentLine.trim()) lines.push(currentLine);
-      currentLine = '';
-    }
-
-    function pad(indent) { return indent; }
-
-    while (i < tokens.length) {
-      const t = tokens[i];
-      const tUp = t.toUpperCase();
-
-      // Handle opening paren — check if subquery
-      if (t === '(') {
-        // Find matching close paren
-        let depth = 1; let j = i + 1;
-        while (j < tokens.length && depth > 0) {
-          if (tokens[j] === '(') depth++;
-          if (tokens[j] === ')') depth--;
-          j++;
-        }
-        const innerTokens = tokens.slice(i + 1, j - 1);
-        const isSub = innerTokens.length > 0 && innerTokens[0].toUpperCase() === 'SELECT';
-
-        if (isSub) {
-          // Format subquery with deeper indent
-          const subIndent = baseIndent + SUB_INDENT;
-          const subFormatted = formatBlock(innerTokens, subIndent);
-          currentLine += '(';
-          pushLine();
-          lines.push(...subFormatted.split('\n'));
-          currentLine = baseIndent + ')';
-          // Check for alias after closing paren
-          if (j < tokens.length && tokens[j] !== ',' && tokens[j] !== ')' && !isKeyword(tokens[j]) && !isJoinStart(tokens[j]) && !isSubKw(tokens[j]) && tokens[j] !== ';') {
-            currentLine += ' ' + tokens[j];
-            j++;
-          }
-        } else {
-          // Regular parenthesized expression — keep inline
-          currentLine += '(' + innerTokens.join(' ') + ')';
-        }
-        i = j;
-        continue;
-      }
-
-      // Close paren (shouldn't hit this in normal flow due to subquery handling)
-      if (t === ')') { currentLine += ')'; i++; continue; }
-
-      // Comma — new line for next column (when in SELECT)
-      if (t === ',') {
-        currentLine += ',';
-        pushLine();
-        currentLine = selectIndent;
-        i++; continue;
-      }
-
-      // Semicolon
-      if (t === ';') { currentLine += ';'; pushLine(); i++; continue; }
-
-      // Major keywords — start new line
-      if (isKeyword(t)) {
-        pushLine();
-        afterSelect = (tUp === 'SELECT');
-        if (tUp === 'ORDER' || tUp === 'GROUP') {
-          // Collect "ORDER BY" or "GROUP BY"
-          if (i + 1 < tokens.length && tokens[i+1].toUpperCase() === 'BY') {
-            currentLine = baseIndent + tUp + ' BY';
-            selectIndent = baseIndent + ' '.repeat(tUp.length + 4);
-            i += 2; continue;
-          }
-        }
-        currentLine = baseIndent + tUp;
-        selectIndent = baseIndent + ' '.repeat(tUp.length + 1);
-        i++; continue;
-      }
-
-      // Join keywords
-      if (isJoinStart(t)) {
-        pushLine();
-        const { phrase, consumed } = collectJoin(tokens, i);
-        currentLine = baseIndent + phrase;
-        selectIndent = baseIndent + ' '.repeat(phrase.length + 1);
-        i += consumed; continue;
-      }
-
-      // AND / OR / ON — new line with indent
-      if (isSubKw(t)) {
-        pushLine();
-        currentLine = baseIndent + tUp + ' '.repeat(Math.max(1, 5 - tUp.length));
-        i++; continue;
-      }
-
-      // Regular token
-      if (currentLine.trim()) currentLine += ' ' + t;
-      else currentLine = (currentLine || baseIndent) + t;
-      i++;
-    }
-    pushLine();
-    return lines.join('\n');
-  }
-
-  const tokens = tokenize(input);
-  return formatBlock(tokens, '');
+  return formatBlock(tokenize(input),'');
 }
 
-function parseCSVLine(line) {
-  const result = []; let current = ""; let inQ = false;
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i];
-    if (ch === '"') { if (inQ && line[i+1] === '"') { current += '"'; i++; } else inQ = !inQ; }
-    else if (ch === ',' && !inQ) { result.push(current.trim()); current = ""; }
-    else current += ch;
-  }
-  result.push(current.trim()); return result;
-}
+function parseCSVLine(line){const result=[];let current="";let inQ=false;for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){if(inQ&&line[i+1]==='"'){current+='"';i++;}else inQ=!inQ;}else if(ch===','&&!inQ){result.push(current.trim());current="";}else current+=ch;}result.push(current.trim());return result;}
 
-function getFiltered() {
-  return state.queries.filter(q => {
-    if (state.filterCat && q.category !== state.filterCat) return false;
-    if (state.filterDb && !q.databases.includes(state.filterDb)) return false;
-    if (state.search) {
-      const s = state.search.toLowerCase();
-      return q.name.toLowerCase().includes(s) || q.sql.toLowerCase().includes(s) ||
-        q.category.toLowerCase().includes(s) || q.databases.some(d => d.toLowerCase().includes(s));
-    }
+function getFiltered(){
+  return state.queries.filter(q=>{
+    if(state.filterCat&&q.category!==state.filterCat)return false;
+    if(state.filterDb&&!q.databases.includes(state.filterDb))return false;
+    if(state.search){const s=state.search.toLowerCase();return q.name.toLowerCase().includes(s)||q.sql.toLowerCase().includes(s)||q.category.toLowerCase().includes(s)||q.databases.some(d=>d.toLowerCase().includes(s));}
     return true;
   });
 }
 
-// ─── Toast ───
-let toastTimer = null;
-function showToast(msg, type = "success") {
-  const existing = document.querySelector('.toast');
-  if (existing) existing.remove();
-  clearTimeout(toastTimer);
-  const el = document.createElement('div');
-  el.className = `toast toast-${type}`;
-  el.textContent = msg;
-  document.body.appendChild(el);
-  toastTimer = setTimeout(() => el.remove(), 3000);
+let toastTimer=null;
+function showToast(msg,type="success"){
+  const existing=document.querySelector('.toast');if(existing)existing.remove();
+  clearTimeout(toastTimer);const el=document.createElement('div');
+  el.className=`toast toast-${type}`;el.textContent=msg;
+  document.body.appendChild(el);toastTimer=setTimeout(()=>el.remove(),3000);
 }
 
-// ─── Modal helpers ───
-function openModal(title, content, maxWidth = 600) {
-  closeModal();
-  const overlay = document.createElement('div');
-  overlay.className = 'modal-overlay';
-  overlay.id = 'modal-overlay';
-  overlay.onclick = (e) => { if (e.target === overlay) closeModal(); };
-  overlay.innerHTML = `
-    <div class="modal" style="max-width:${maxWidth}px" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <span class="modal-title">${esc(title)}</span>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-      <div class="modal-body" id="modal-content">${content}</div>
-    </div>`;
+function openModal(title,content,maxWidth=600){
+  closeModal();const overlay=document.createElement('div');
+  overlay.className='modal-overlay';overlay.id='modal-overlay';
+  overlay.onclick=(e)=>{if(e.target===overlay)closeModal();};
+  overlay.innerHTML=`<div class="modal" style="max-width:${maxWidth}px" onclick="event.stopPropagation()"><div class="modal-header"><span class="modal-title">// ${esc(title)}</span><button class="modal-close" onclick="closeModal()">✕</button></div><div class="modal-body" id="modal-content">${content}</div></div>`;
   document.body.appendChild(overlay);
 }
+function closeModal(){const el=document.getElementById('modal-overlay');if(el)el.remove();}
 
-function closeModal() {
-  const el = document.getElementById('modal-overlay');
-  if (el) el.remove();
+function handleSearch(input){
+  state.search=input.value;const listEl=document.getElementById('queries-list');
+  if(listEl)listEl.innerHTML=renderQueryList();
+  const wrap=input.closest('.search-wrap');let clearBtn=wrap.querySelector('.search-clear');
+  if(state.search&&!clearBtn){const btn=document.createElement('button');btn.className='search-clear';btn.textContent='×';btn.onclick=()=>{state.search='';input.value='';handleSearch(input);};wrap.appendChild(btn);}
+  else if(!state.search&&clearBtn)clearBtn.remove();
+  const sb=document.getElementById('sort-bar');if(sb)sb.innerHTML=renderSortBar();
 }
 
-// ═══════════════════════════════════════════════════
-// ─── RENDER ───
-// ═══════════════════════════════════════════════════
-function handleSearch(input) {
-  state.search = input.value;
-  const listEl = document.getElementById('queries-list');
-  if (listEl) {
-    listEl.innerHTML = renderQueryList();
-  }
-  // Update clear button visibility
-  const wrap = input.closest('.search-wrap');
-  let clearBtn = wrap.querySelector('.search-clear');
-  if (state.search && !clearBtn) {
-    const btn = document.createElement('button');
-    btn.className = 'search-clear';
-    btn.textContent = '✕';
-    btn.onclick = () => { state.search = ''; input.value = ''; handleSearch(input); };
-    wrap.appendChild(btn);
-  } else if (!state.search && clearBtn) {
-    clearBtn.remove();
-  }
-}
-
-function renderQueryList() {
-  const filtered = getSorted(getFiltered());
-  if (filtered.length === 0) {
-    return `<div class="empty"><div class="empty-icon">⌘</div><p class="empty-title">No hay consultas</p><p class="empty-desc">Crea tu primera consulta o importa desde un archivo</p></div>`;
-  }
-  return filtered.map((q, idx) => {
-    const dateStr = q.createdAt ? new Date(q.createdAt).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' }) : '';
-    return `
-    <div class="query-card" style="animation: slideUp 0.3s ease ${idx*0.03}s both" onclick="viewQuery('${q.id}')">
+function renderQueryList(){
+  const filtered=getSorted(getFiltered());
+  if(filtered.length===0)return`<div class="empty"><div class="empty-icon">SELECT * FROM queries WHERE 1=0;</div><p class="empty-title">sin resultados</p><p class="empty-desc">crea o importa tu primera consulta</p></div>`;
+  return filtered.map((q,idx)=>{
+    const dateStr=q.createdAt?new Date(q.createdAt).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}):'';
+    return`<div class="query-card" style="animation:slideUp .25s ease ${idx*.025}s both" onclick="viewQuery('${q.id}')">
       <div class="card-header">
         <div>
           <div class="card-title">${esc(q.name)}</div>
-          ${q.description ? `<div class="card-desc">${esc(q.description)}</div>` : ''}
-          ${dateStr ? `<div class="card-desc" style="margin-top:3px;font-size:11px;color:#4b5068">Agregada: ${dateStr}</div>` : ''}
+          ${q.description?`<div class="card-desc">${esc(q.description)}</div>`:''}
+          ${dateStr?`<div class="card-date">${dateStr}</div>`:''}
         </div>
         <div class="card-actions">
-          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();copyQuerySQL('${q.id}', this)" title="Copiar SQL">⎘ Copiar</button>
-          <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();editQuery('${q.id}')">Editar</button>
-          <button class="btn btn-secondary btn-sm btn-danger" onclick="event.stopPropagation();deleteQuery('${q.id}')">×</button>
+          <button class="btn btn-sm" onclick="event.stopPropagation();copyQuerySQL('${q.id}',this)">copy</button>
+          <button class="btn btn-sm" onclick="event.stopPropagation();editQuery('${q.id}')">edit</button>
+          <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();deleteQuery('${q.id}')">del</button>
         </div>
       </div>
-      <div class="card-sql"><code class="sql-code" style="font-size:11px">${highlightSQL(q.sql)}</code></div>
+      <div class="card-sql"><code class="sql-code">${highlightSQL(q.sql)}</code></div>
       <div class="card-tags">
         <span class="tag tag-purple">${esc(q.category)}</span>
-        ${q.databases.map(d => `<span class="tag tag-green">${esc(d)}</span>`).join('')}
+        ${q.databases.map(d=>`<span class="tag tag-green">${esc(d)}</span>`).join('')}
       </div>
-    </div>`
+    </div>`;
   }).join('');
 }
 
-function render() {
-  const app = document.getElementById('app');
+function render(){
+  const app=document.getElementById('app');
+  let tabContent='';
+  if(state.activeTab==='queries'){
+    tabContent=`<div class="search-wrap"><span class="search-prefix">›_</span><input class="search-input" id="search-input" placeholder="buscar por nombre, sql, categoría..." value="${esc(state.search)}" oninput="handleSearch(this)">${state.search?`<button class="search-clear" onclick="state.search='';render()">×</button>`:''}</div><div class="sort-bar" id="sort-bar">${renderSortBar()}</div><div id="queries-list">${renderQueryList()}</div>`;
+  }else if(state.activeTab==='categories'){tabContent=renderCategoriesPanel();}
+  else if(state.activeTab==='databases'){tabContent=renderDatabasesPanel();}
 
-  let queriesHTML = '';
-  if (state.activeTab === 'queries') {
-    queriesHTML = renderQueryList();
-  }
-
-  let tabContent = '';
-  if (state.activeTab === 'queries') {
-    tabContent = `
-      <div class="search-wrap">
-        <span class="search-icon">⌕</span>
-        <input class="search-input" id="search-input" placeholder="Buscar consultas por nombre, SQL, categoría..." value="${esc(state.search)}" oninput="handleSearch(this)">
-        ${state.search ? `<button class="search-clear" onclick="state.search='';render()">✕</button>` : ''}
-      </div>
-      <div class="sort-bar" id="sort-bar">${renderSortBar()}</div>
-      <div id="queries-list">${renderQueryList()}</div>`;
-  } else if (state.activeTab === 'categories') {
-    tabContent = renderCategoriesPanel();
-  } else if (state.activeTab === 'databases') {
-    tabContent = renderDatabasesPanel();
-  }
-
-  app.innerHTML = `
+  app.innerHTML=`
     <header class="header">
       <div class="header-left">
-        <div class="header-icon">⟨⟩</div>
-        <div>
-          <div class="header-title">Biblioteca de consultas - FCS</div>
-          <div class="header-subtitle">
-            ${state.queries.length} consultas · ${state.categories.length} categorías · ${state.databases.length} BDs
-            <span class="status-dot status-green">● Local</span>
-          </div>
-        </div>
+        <div class="header-logo"><span class="header-logo-bracket">[</span>SQL<span class="header-logo-bracket">]</span> Biblioteca de consultas<span class="cursor"></span></div>
+        <div class="header-meta">${state.queries.length} queries · ${state.categories.length} cats · ${state.databases.length} dbs</div>
       </div>
       <div class="header-actions">
-        <button id="drive-btn" class="drive-btn ${getDriveStatusLabel().cls}" onclick="connectDrive()">
-          <span class="drive-dot"></span>${getDriveStatusLabel().label}
-        </button>
-        <button class="btn btn-primary" onclick="openCreateModal()">+ Nueva consulta</button>
-        <button class="btn btn-secondary" onclick="openImportModal()">↑ Importar</button>
-        <button class="btn btn-secondary" onclick="openBatchModal()">⊞ Lote</button>
-        <button class="btn btn-secondary" onclick="exportBackup()">↓ Backup</button>
-        <label class="btn btn-secondary" style="cursor:pointer">⟳ Restaurar<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label>
-        <button class="btn btn-secondary btn-danger" style="font-size:12px;padding:8px 12px" onclick="resetAll()">⌀ Reset</button>
+        <button id="drive-btn" class="drive-btn ${getDriveStatusLabel().cls}" onclick="connectDrive()"><span class="drive-dot"></span>${getDriveStatusLabel().label}</button>
+        <button class="btn btn-primary" onclick="openCreateModal()">+ new</button>
+        <button class="btn" onclick="openImportModal()">import</button>
+        <button class="btn" onclick="openBatchModal()">batch</button>
+        <button class="btn" onclick="exportBackup()">backup</button>
+        <label class="btn" style="cursor:pointer">restore<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label>
+        <button class="btn btn-danger" style="font-size:11px;padding:6px 10px" onclick="resetAll()">reset</button>
       </div>
     </header>
     <div class="body">
       <aside class="sidebar">
-        ${['queries','categories','databases'].map(id => {
-          const labels = {queries:'Consultas',categories:'Categorías',databases:'Bases de datos'};
-          const icons = {queries:'⌘',categories:'◈',databases:'◉'};
-          return `<button class="sidebar-btn ${state.activeTab===id?'active':''}" onclick="state.activeTab='${id}';state.filterCat='';state.filterDb='';render()">
-            <span style="font-size:16px">${icons[id]}</span>${labels[id]}
-          </button>`;
+        ${['queries','categories','databases'].map(id=>{
+          const labels={queries:'queries',categories:'categories',databases:'databases'};
+          const icons={queries:'▸',categories:'◈',databases:'◉'};
+          const count={queries:state.queries.length,categories:state.categories.length,databases:state.databases.length};
+          return`<button class="sidebar-btn ${state.activeTab===id?'active':''}" onclick="state.activeTab='${id}';state.filterCat='';state.filterDb='';render()"><span class="sidebar-icon">${icons[id]}</span>${labels[id]}<span class="sidebar-count">${count[id]}</span></button>`;
         }).join('')}
-        <div class="sidebar-divider">Filtro rápido</div>
+        <div class="sidebar-label">Filter</div>
         <div class="sidebar-filters">
           <label class="label">Categoría</label>
           <select onchange="state.filterCat=this.value;state.activeTab='queries';render()">
-            <option value="">Todas</option>
-            ${state.categories.map(c => `<option value="${esc(c)}" ${state.filterCat===c?'selected':''}>${esc(c)}</option>`).join('')}
+            <option value="">todas</option>
+            ${state.categories.map(c=>`<option value="${esc(c)}" ${state.filterCat===c?'selected':''}>${esc(c)}</option>`).join('')}
           </select>
           <label class="label">Base de datos</label>
           <select onchange="state.filterDb=this.value;state.activeTab='queries';render()">
-            <option value="">Todas</option>
-            ${state.databases.map(d => `<option value="${esc(d)}" ${state.filterDb===d?'selected':''}>${esc(d)}</option>`).join('')}
+            <option value="">todas</option>
+            ${state.databases.map(d=>`<option value="${esc(d)}" ${state.filterDb===d?'selected':''}>${esc(d)}</option>`).join('')}
           </select>
         </div>
       </aside>
-      <main class="main" style="animation: fadeIn 0.25s ease">
-        ${tabContent}
-      </main>
+      <main class="main" style="animation:fadeIn .2s ease">${tabContent}</main>
     </div>`;
 }
 
-// ─── Categories Panel ───
-function renderCategoriesPanel() {
-  return `
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:20px">Gestión de categorías</h2>
-    <div class="form-row" style="margin-bottom:20px">
-      <input id="new-cat-input" placeholder="Nueva categoría..." onkeydown="if(event.key==='Enter')addCategory()">
-      <button class="btn btn-primary" onclick="addCategory()">+ Crear</button>
-    </div>
-    ${state.categories.map((cat, idx) => {
-      const count = state.queries.filter(q => q.category === cat).length;
-      return `<div class="item-row">
-        <span class="tag tag-purple">${esc(cat)}</span>
-        <span class="item-count">${count} consulta${count!==1?'s':''}</span>
-        <button class="btn btn-secondary btn-sm" onclick="editCategoryPrompt(${idx})">Editar</button>
-        <button class="btn btn-secondary btn-sm btn-danger" onclick="deleteCategory(${idx})">×</button>
-      </div>`;
-    }).join('')}`;
+function renderCategoriesPanel(){
+  return`<h2 style="font-size:13px;font-weight:600;margin-bottom:16px;font-family:var(--mono);color:var(--amber);letter-spacing:.5px;text-transform:uppercase">// Categorías</h2>
+    <div class="form-row" style="margin-bottom:14px"><input id="new-cat-input" placeholder="nueva categoría..." onkeydown="if(event.key==='Enter')addCategory()"><button class="btn btn-primary" onclick="addCategory()" style="white-space:nowrap">+ crear</button></div>
+    ${state.categories.map((cat,idx)=>{const count=state.queries.filter(q=>q.category===cat).length;return`<div class="item-row"><span class="tag tag-purple">${esc(cat)}</span><span class="item-count">${count} query${count!==1?'s':''}</span><button class="btn btn-sm" onclick="editCategoryPrompt(${idx})">edit</button><button class="btn btn-sm btn-danger" onclick="deleteCategory(${idx})">del</button></div>`;}).join('')}`;
+}
+function renderDatabasesPanel(){
+  return`<h2 style="font-size:13px;font-weight:600;margin-bottom:16px;font-family:var(--mono);color:var(--amber);letter-spacing:.5px;text-transform:uppercase">// Bases de datos</h2>
+    <div class="form-row" style="margin-bottom:14px"><input id="new-db-input" placeholder="nueva base de datos..." onkeydown="if(event.key==='Enter')addDatabase()"><button class="btn btn-primary" onclick="addDatabase()" style="white-space:nowrap">+ crear</button></div>
+    ${state.databases.map((db,idx)=>{const count=state.queries.filter(q=>q.databases.includes(db)).length;return`<div class="item-row"><span class="tag tag-green">${esc(db)}</span><span class="item-count">${count} query${count!==1?'s':''}</span><button class="btn btn-sm" onclick="editDatabasePrompt(${idx})">edit</button><button class="btn btn-sm btn-danger" onclick="deleteDatabase(${idx})">del</button></div>`;}).join('')}`;
 }
 
-// ─── Databases Panel ───
-function renderDatabasesPanel() {
-  return `
-    <h2 style="font-size:18px;font-weight:700;margin-bottom:20px">Gestión de bases de datos</h2>
-    <div class="form-row" style="margin-bottom:20px">
-      <input id="new-db-input" placeholder="Nueva base de datos..." onkeydown="if(event.key==='Enter')addDatabase()">
-      <button class="btn btn-primary" onclick="addDatabase()">+ Crear</button>
-    </div>
-    ${state.databases.map((db, idx) => {
-      const count = state.queries.filter(q => q.databases.includes(db)).length;
-      return `<div class="item-row">
-        <span class="tag tag-green">${esc(db)}</span>
-        <span class="item-count">${count} consulta${count!==1?'s':''}</span>
-        <button class="btn btn-secondary btn-sm" onclick="editDatabasePrompt(${idx})">Editar</button>
-        <button class="btn btn-secondary btn-sm btn-danger" onclick="deleteDatabase(${idx})">×</button>
-      </div>`;
-    }).join('')}`;
+let _editingId=null,_selectedDBs=[];
+function openCreateModal(queryId){
+  _editingId=queryId||null;const q=queryId?state.queries.find(x=>x.id===queryId):null;_selectedDBs=q?[...q.databases]:[];
+  openModal(q?'Editar consulta':'Nueva consulta',`
+    <div class="form-group"><label class="label">Nombre *</label><input id="q-name" value="${q?esc(q.name):''}" placeholder="nombre descriptivo"></div>
+    <div class="form-group"><label class="label">Descripción</label><input id="q-desc" value="${q?esc(q.description||''):''}" placeholder="descripción breve (opcional)"></div>
+    <div class="form-group"><label class="label">SQL *</label><textarea id="q-sql" placeholder="SELECT * FROM tabla...">${q?esc(q.sql):''}</textarea><button class="btn btn-sm" style="margin-top:6px" onclick="document.getElementById('q-sql').value=formatSQL(document.getElementById('q-sql').value)">✦ formatear</button></div>
+    <div class="form-group"><label class="label">Categoría *</label><div class="form-row"><select id="q-cat"><option value="">seleccionar...</option>${state.categories.map(c=>`<option value="${esc(c)}" ${q&&q.category===c?'selected':''}>${esc(c)}</option>`).join('')}</select><input id="q-newcat" placeholder="nueva cat." onkeydown="if(event.key==='Enter')addCatInModal()"><button class="btn" onclick="addCatInModal()">+</button></div></div>
+    <div class="form-group"><label class="label">Bases de datos</label><div class="db-pills" id="db-pills-container">${renderDBPills()}</div><div class="form-row"><input id="q-newdb" placeholder="nueva bd" onkeydown="if(event.key==='Enter')addDBInModal()"><button class="btn" onclick="addDBInModal()">+</button></div></div>
+    <div class="form-actions"><button class="btn" onclick="closeModal()">cancelar</button><button class="btn btn-primary" onclick="saveQueryFromModal()">${q?'guardar cambios':'crear query'}</button></div>
+  `,700);
+}
+function renderDBPills(){return state.databases.map(db=>`<button class="db-pill ${_selectedDBs.includes(db)?'active':''}" onclick="toggleDBInModal('${esc(db)}')">${esc(db)}</button>`).join('');}
+function toggleDBInModal(db){if(_selectedDBs.includes(db))_selectedDBs=_selectedDBs.filter(d=>d!==db);else _selectedDBs.push(db);document.getElementById('db-pills-container').innerHTML=renderDBPills();}
+function addCatInModal(){const input=document.getElementById('q-newcat');const val=input.value.trim();if(!val)return;if(state.categories.includes(val)){document.getElementById('q-cat').value=val;input.value='';return;}state.categories.push(val);saveState();const select=document.getElementById('q-cat');const opt=document.createElement('option');opt.value=val;opt.textContent=val;select.appendChild(opt);select.value=val;input.value='';showToast("cat '"+val+"' creada");}
+function addDBInModal(){const input=document.getElementById('q-newdb');const val=input.value.trim();if(val&&!state.databases.includes(val)){state.databases.push(val);_selectedDBs.push(val);saveState();document.getElementById('db-pills-container').innerHTML=renderDBPills();input.value='';}}
+function saveQueryFromModal(){
+  const name=document.getElementById('q-name').value.trim();const desc=document.getElementById('q-desc').value.trim();const sql=document.getElementById('q-sql').value.trim();let cat=document.getElementById('q-cat').value;const newCatInput=document.getElementById('q-newcat');const newCatVal=newCatInput?newCatInput.value.trim():'';
+  if(!cat&&newCatVal){if(!state.categories.includes(newCatVal))state.categories.push(newCatVal);cat=newCatVal;}
+  if(!name||!sql||!cat){showToast("completa nombre, sql y categoría","error");return;}
+  const newDbInput=document.getElementById('q-newdb');const newDbVal=newDbInput?newDbInput.value.trim():'';
+  if(newDbVal){if(!state.databases.includes(newDbVal))state.databases.push(newDbVal);if(!_selectedDBs.includes(newDbVal))_selectedDBs.push(newDbVal);}
+  if(_editingId){const q=state.queries.find(x=>x.id===_editingId);if(q)Object.assign(q,{name,description:desc,sql,category:cat,databases:[..._selectedDBs],updatedAt:new Date().toISOString()});showToast("query actualizada");}
+  else{state.queries.push({id:genId(),name,description:desc,sql,category:cat,databases:[..._selectedDBs],createdAt:new Date().toISOString()});showToast("query creada");}
+  saveState();closeModal();render();
 }
 
-// ═══════════════════════════════════════════════════
-// ─── ACTIONS ───
-// ═══════════════════════════════════════════════════
-
-// ─── Create / Edit Modal ───
-let _editingId = null;
-let _selectedDBs = [];
-
-function openCreateModal(queryId) {
-  _editingId = queryId || null;
-  const q = queryId ? state.queries.find(x => x.id === queryId) : null;
-  _selectedDBs = q ? [...q.databases] : [];
-
-  openModal(q ? 'Editar consulta' : 'Nueva consulta', `
-    <div class="form-group">
-      <label class="label">Nombre *</label>
-      <input id="q-name" value="${q ? esc(q.name) : ''}" placeholder="Ej: Consulta de ventas mensuales">
-    </div>
-    <div class="form-group">
-      <label class="label">Descripción</label>
-      <input id="q-desc" value="${q ? esc(q.description||'') : ''}" placeholder="Descripción breve (opcional)">
-    </div>
-    <div class="form-group">
-      <label class="label">Consulta SQL *</label>
-      <textarea id="q-sql" placeholder="SELECT * FROM tabla WHERE condición...">${q ? esc(q.sql) : ''}</textarea>
-      <button class="btn btn-secondary btn-sm" style="margin-top:8px" onclick="document.getElementById('q-sql').value=formatSQL(document.getElementById('q-sql').value)">✦ Formatear SQL</button>
-    </div>
-    <div class="form-group">
-      <label class="label">Categoría *</label>
-      <div class="form-row">
-        <select id="q-cat">
-          <option value="">Seleccionar...</option>
-          ${state.categories.map(c => `<option value="${esc(c)}" ${q&&q.category===c?'selected':''}>${esc(c)}</option>`).join('')}
-        </select>
-        <input id="q-newcat" placeholder="Nueva categoría" onkeydown="if(event.key==='Enter')addCatInModal()">
-        <button class="btn btn-secondary" onclick="addCatInModal()">+ Crear</button>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="label">Bases de datos</label>
-      <div class="db-pills" id="db-pills-container">${renderDBPills()}</div>
-      <div class="form-row">
-        <input id="q-newdb" placeholder="Nueva base de datos" onkeydown="if(event.key==='Enter')addDBInModal()">
-        <button class="btn btn-secondary" onclick="addDBInModal()">+ Crear</button>
-      </div>
-    </div>
-    <div class="form-actions">
-      <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-      <button class="btn btn-primary" onclick="saveQueryFromModal()">${q ? 'Guardar cambios' : 'Crear consulta'}</button>
-    </div>
-  `, 700);
-}
-
-function renderDBPills() {
-  return state.databases.map(db => `
-    <button class="db-pill ${_selectedDBs.includes(db)?'active':''}" onclick="toggleDBInModal('${esc(db)}')">${esc(db)}</button>
-  `).join('');
-}
-
-function toggleDBInModal(db) {
-  if (_selectedDBs.includes(db)) _selectedDBs = _selectedDBs.filter(d => d !== db);
-  else _selectedDBs.push(db);
-  document.getElementById('db-pills-container').innerHTML = renderDBPills();
-}
-
-function addCatInModal() {
-  const input = document.getElementById('q-newcat');
-  const val = input.value.trim();
-  if (!val) return;
-  if (state.categories.includes(val)) {
-    // Category exists, just select it
-    document.getElementById('q-cat').value = val;
-    input.value = '';
-    return;
-  }
-  state.categories.push(val);
-  saveState();
-  const select = document.getElementById('q-cat');
-  const opt = document.createElement('option');
-  opt.value = val; opt.textContent = val;
-  select.appendChild(opt);
-  select.value = val;
-  input.value = '';
-  showToast("Categoría '" + val + "' creada");
-}
-
-function addDBInModal() {
-  const input = document.getElementById('q-newdb');
-  const val = input.value.trim();
-  if (val && !state.databases.includes(val)) {
-    state.databases.push(val);
-    _selectedDBs.push(val);
-    saveState();
-    document.getElementById('db-pills-container').innerHTML = renderDBPills();
-    input.value = '';
-  }
-}
-
-function saveQueryFromModal() {
-  const name = document.getElementById('q-name').value.trim();
-  const desc = document.getElementById('q-desc').value.trim();
-  const sql = document.getElementById('q-sql').value.trim();
-  let cat = document.getElementById('q-cat').value;
-  const newCatInput = document.getElementById('q-newcat');
-  const newCatVal = newCatInput ? newCatInput.value.trim() : '';
-
-  // If no category selected but there's text in the new category field, create it
-  if (!cat && newCatVal) {
-    if (!state.categories.includes(newCatVal)) {
-      state.categories.push(newCatVal);
-    }
-    cat = newCatVal;
-  }
-
-  if (!name || !sql || !cat) { showToast("Completa nombre, SQL y categoría", "error"); return; }
-
-  // Also handle new DB input if user forgot to click +
-  const newDbInput = document.getElementById('q-newdb');
-  const newDbVal = newDbInput ? newDbInput.value.trim() : '';
-  if (newDbVal) {
-    if (!state.databases.includes(newDbVal)) {
-      state.databases.push(newDbVal);
-    }
-    if (!_selectedDBs.includes(newDbVal)) {
-      _selectedDBs.push(newDbVal);
-    }
-  }
-
-  if (_editingId) {
-    const q = state.queries.find(x => x.id === _editingId);
-    if (q) { Object.assign(q, { name, description: desc, sql, category: cat, databases: [..._selectedDBs], updatedAt: new Date().toISOString() }); }
-    showToast("Consulta actualizada");
-  } else {
-    state.queries.push({ id: genId(), name, description: desc, sql, category: cat, databases: [..._selectedDBs], createdAt: new Date().toISOString() });
-    showToast("Consulta creada");
-  }
-  saveState(); closeModal(); render();
-}
-
-// ─── View / Edit / Delete ───
-function viewQuery(id) {
-  const q = state.queries.find(x => x.id === id);
-  if (!q) return;
-  openModal(q.name, `
-    ${q.description ? `<p style="color:#94a3b8;font-size:13px;margin-bottom:16px">${esc(q.description)}</p>` : ''}
-    <div class="card-tags" style="margin-bottom:16px">
-      <span class="tag tag-purple">${esc(q.category)}</span>
-      ${q.databases.map(d => `<span class="tag tag-green">${esc(d)}</span>`).join('')}
-    </div>
+let _viewFormatted=false;
+function viewQuery(id){
+  const q=state.queries.find(x=>x.id===id);if(!q)return;
+  openModal(q.name,`${q.description?`<p style="color:var(--text2);font-size:12px;margin-bottom:12px;font-family:var(--mono)">${esc(q.description)}</p>`:''}
+    <div class="card-tags" style="margin-bottom:12px"><span class="tag tag-purple">${esc(q.category)}</span>${q.databases.map(d=>`<span class="tag tag-green">${esc(d)}</span>`).join('')}</div>
     <div class="sql-viewer" id="sql-viewer-content"><code class="sql-code">${highlightSQL(q.sql)}</code></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-secondary" id="format-toggle-btn" onclick="toggleFormat('${id}')">✦ Formatear</button>
-      <button class="btn btn-secondary" onclick="copySQL('${id}')">⎘ Copiar</button>
-      <div style="flex:1"></div>
-      <button class="btn btn-primary" onclick="closeModal();editQuery('${id}')">Editar</button>
-    </div>
-  `, 750);
-  window._viewFormatted = false;
+    <div style="display:flex;gap:6px"><button class="btn btn-sm" id="format-toggle-btn" onclick="toggleFormat('${id}')">✦ formatear</button><button class="btn btn-sm" onclick="copySQL('${id}')">copy</button><div style="flex:1"></div><button class="btn btn-primary btn-sm" onclick="closeModal();editQuery('${id}')">edit</button></div>
+  `,750);_viewFormatted=false;
 }
+function toggleFormat(id){const q=state.queries.find(x=>x.id===id);if(!q)return;_viewFormatted=!_viewFormatted;const sql=_viewFormatted?formatSQL(q.sql):q.sql;document.getElementById('sql-viewer-content').innerHTML=`<code class="sql-code">${highlightSQL(sql)}</code>`;document.getElementById('format-toggle-btn').textContent=_viewFormatted?'⟲ original':'✦ formatear';}
+function copySQL(id){const q=state.queries.find(x=>x.id===id);if(!q)return;const sql=_viewFormatted?formatSQL(q.sql):q.sql;navigator.clipboard.writeText(sql).then(()=>showToast("copiado"));}
+function editQuery(id){openCreateModal(id);}
+function copyQuerySQL(id,btn){const q=state.queries.find(x=>x.id===id);if(!q)return;navigator.clipboard.writeText(q.sql).then(()=>{const orig=btn.textContent;btn.textContent='✓';btn.style.color='var(--green)';setTimeout(()=>{btn.textContent=orig;btn.style.color='';},1500)});}
+function deleteQuery(id){if(!confirm("¿Eliminar esta query?"))return;state.queries=state.queries.filter(q=>q.id!==id);saveState();render();showToast("query eliminada","warn");}
 
-function toggleFormat(id) {
-  const q = state.queries.find(x => x.id === id);
-  if (!q) return;
-  window._viewFormatted = !window._viewFormatted;
-  const sql = window._viewFormatted ? formatSQL(q.sql) : q.sql;
-  document.getElementById('sql-viewer-content').innerHTML = `<code class="sql-code">${highlightSQL(sql)}</code>`;
-  document.getElementById('format-toggle-btn').textContent = window._viewFormatted ? '⟲ Original' : '✦ Formatear';
+function addCategory(){const input=document.getElementById('new-cat-input');const val=input.value.trim();if(val&&!state.categories.includes(val)){state.categories.push(val);saveState();render();showToast("categoría creada");}}
+function editCategoryPrompt(idx){const newName=prompt("Nuevo nombre:",state.categories[idx]);if(newName&&newName.trim()&&!state.categories.includes(newName.trim())){const old=state.categories[idx];state.categories[idx]=newName.trim();state.queries.forEach(q=>{if(q.category===old)q.category=newName.trim();});saveState();render();showToast("categoría actualizada");}}
+function deleteCategory(idx){const cat=state.categories[idx];const count=state.queries.filter(q=>q.category===cat).length;if(count>0&&!confirm(`${count} queries asociadas. ¿Eliminar?`))return;state.categories.splice(idx,1);saveState();render();showToast("categoría eliminada","warn");}
+function addDatabase(){const input=document.getElementById('new-db-input');const val=input.value.trim();if(val&&!state.databases.includes(val)){state.databases.push(val);saveState();render();showToast("db agregada");}}
+function editDatabasePrompt(idx){const newName=prompt("Nuevo nombre:",state.databases[idx]);if(newName&&newName.trim()&&!state.databases.includes(newName.trim())){const old=state.databases[idx];state.databases[idx]=newName.trim();state.queries.forEach(q=>{q.databases=q.databases.map(d=>d===old?newName.trim():d);});saveState();render();showToast("db actualizada");}}
+function deleteDatabase(idx){const db=state.databases[idx];const count=state.queries.filter(q=>q.databases.includes(db)).length;if(count>0&&!confirm(`${count} queries asociadas. ¿Eliminar?`))return;state.databases.splice(idx,1);saveState();render();showToast("db eliminada","warn");}
+
+function exportBackup(){const data=JSON.stringify({queries:state.queries,categories:state.categories,databases:state.databases,exportedAt:new Date().toISOString()},null,2);const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));const now=new Date();const dt=now.toISOString().slice(0,10);const hr=String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');a.download=`sql_queries_backup_${dt}_${hr}.json`;a.click();URL.revokeObjectURL(a.href);showToast("backup exportado");}
+function importBackup(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=(ev)=>{try{const data=JSON.parse(ev.target.result);if(data.queries){if(!confirm("Reemplazará todos los datos actuales. ¿Continuar?"))return;state.queries=data.queries.map(q=>({...q,id:genId()}));state.categories=data.categories&&data.categories.length>0?[...data.categories]:[];state.databases=data.databases&&data.databases.length>0?[...data.databases]:[];saveState();render();showToast(`${data.queries.length} queries restauradas`);}}catch{showToast("error al leer archivo","error");}};reader.readAsText(file);e.target.value="";}
+function resetAll(){if(!confirm("¿Eliminar TODOS los datos?"))return;state.queries=[];state.categories=[...DEFAULT_CATEGORIES];state.databases=[...DEFAULT_DATABASES];localStorage.removeItem(STORAGE_KEY);render();showToast("datos reiniciados","warn");}
+
+let _importContent="",_importDBs=[];
+function openImportModal(){
+  _importContent="";_importDBs=[];
+  openModal("Importar consulta",`<div class="form-group"><label class="label">Archivo (.sql, .csv, .txt)</label><label class="file-upload" id="import-file-label">⇧ seleccionar archivo<input type="file" accept=".sql,.csv,.txt" onchange="handleImportFile(event)"></label></div><div id="import-form-area"></div>`,700);
 }
-
-function copySQL(id) {
-  const q = state.queries.find(x => x.id === id);
-  if (!q) return;
-  const sql = window._viewFormatted ? formatSQL(q.sql) : q.sql;
-  navigator.clipboard.writeText(sql).then(() => showToast("Copiado al portapapeles"));
+function handleImportFile(e){
+  const file=e.target.files[0];if(!file)return;const reader=new FileReader();
+  reader.onload=(ev)=>{
+    _importContent=ev.target.result;const name=file.name.replace(/\.(sql|csv|txt)$/i,"");
+    document.getElementById('import-file-label').textContent="✓ cargado — clic para cambiar";
+    document.getElementById('import-form-area').innerHTML=`<div class="form-group"><label class="label">Vista previa</label><div class="sql-preview"><code class="sql-code" style="font-size:10px">${highlightSQL(_importContent)}</code></div></div><div class="form-group"><label class="label">Nombre *</label><input id="imp-name" value="${esc(name)}"></div><div class="form-group"><label class="label">Descripción</label><input id="imp-desc" placeholder="Opcional"></div><div class="form-group"><label class="label">Categoría *</label><div class="form-row"><select id="imp-cat"><option value="">seleccionar...</option>${state.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select><input id="imp-newcat" placeholder="nueva" onkeydown="if(event.key==='Enter')addCatInImport()"><button class="btn" onclick="addCatInImport()">+</button></div></div><div class="form-group"><label class="label">Bases de datos</label><div class="db-pills" id="imp-db-pills">${renderImportDBPills()}</div><div class="form-row"><input id="imp-newdb" placeholder="nueva bd" onkeydown="if(event.key==='Enter')addDBInImport()"><button class="btn" onclick="addDBInImport()">+</button></div></div><div class="form-actions"><button class="btn" onclick="closeModal()">cancelar</button><button class="btn btn-primary" onclick="saveImportQuery()">importar</button></div>`;
+  };reader.readAsText(file);
 }
+function renderImportDBPills(){return state.databases.map(db=>`<button class="db-pill ${_importDBs.includes(db)?'active':''}" onclick="toggleImportDB('${esc(db)}')">${esc(db)}</button>`).join('');}
+function toggleImportDB(db){if(_importDBs.includes(db))_importDBs=_importDBs.filter(d=>d!==db);else _importDBs.push(db);document.getElementById('imp-db-pills').innerHTML=renderImportDBPills();}
+function addCatInImport(){const v=document.getElementById('imp-newcat').value.trim();if(!v)return;if(state.categories.includes(v)){document.getElementById('imp-cat').value=v;document.getElementById('imp-newcat').value='';return;}state.categories.push(v);saveState();const s=document.getElementById('imp-cat');const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);s.value=v;document.getElementById('imp-newcat').value='';showToast("cat '"+v+"' creada");}
+function addDBInImport(){const v=document.getElementById('imp-newdb').value.trim();if(v&&!state.databases.includes(v)){state.databases.push(v);_importDBs.push(v);saveState();document.getElementById('imp-db-pills').innerHTML=renderImportDBPills();document.getElementById('imp-newdb').value='';}}
+function saveImportQuery(){const name=document.getElementById('imp-name').value.trim();const desc=document.getElementById('imp-desc').value.trim();let cat=document.getElementById('imp-cat').value;const newCatVal=document.getElementById('imp-newcat')?document.getElementById('imp-newcat').value.trim():'';if(!cat&&newCatVal){if(!state.categories.includes(newCatVal))state.categories.push(newCatVal);cat=newCatVal;}if(!name||!_importContent.trim()||!cat){showToast("completa nombre y categoría","error");return;}state.queries.push({id:genId(),name,description:desc,sql:_importContent.trim(),category:cat,databases:[..._importDBs],createdAt:new Date().toISOString()});saveState();closeModal();render();showToast("query importada");}
 
-function editQuery(id) { openCreateModal(id); }
-
-function copyQuerySQL(id, btn) {
-  const q = state.queries.find(x => x.id === id);
-  if (!q) return;
-  navigator.clipboard.writeText(q.sql).then(() => {
-    const orig = btn.textContent;
-    btn.textContent = '✓ Copiado';
-    btn.style.color = '#34d399';
-    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
-  });
+let _batchRows=[];
+function openBatchModal(){
+  _batchRows=[];
+  openModal("Importación por lote",`<p style="color:var(--text2);font-size:11px;line-height:1.6;margin-bottom:14px;font-family:var(--mono)">CSV con columnas: <span style="color:var(--amber)">nombre, categoría, base_de_datos, consulta_sql</span>. Múltiples BDs con <span style="color:var(--cyan)">;</span></p><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="downloadTemplate()">↓ plantilla</button><label class="btn" style="cursor:pointer">⇧ cargar CSV<input type="file" accept=".csv" onchange="handleBatchFile(event)" style="display:none"></label></div><div id="batch-preview-area"></div>`,900);
 }
+function downloadTemplate(){const csv='nombre,categoria,base_de_datos,consulta_sql\n"Ventas mensuales","Reportes","Oracle_Prod","SELECT month, SUM(amount) FROM sales GROUP BY month"\n"Usuarios activos","General","MySQL_Dev","SELECT COUNT(*) FROM users WHERE active = 1"';const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv"}));a.download="plantilla_importacion_sql.csv";a.click();}
+function handleBatchFile(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=(ev)=>{const lines=ev.target.result.split("\n").map(l=>l.trim()).filter(Boolean);if(lines.length<2){showToast("archivo vacío","error");return;}_batchRows=lines.slice(1).map(line=>{const c=parseCSVLine(line);return{name:c[0]||"",category:c[1]||"",database:c[2]||"",sql:c[3]||"",include:true};}).filter(r=>r.sql.trim());renderBatchPreview();};reader.readAsText(file);}
+function renderBatchPreview(){document.getElementById('batch-preview-area').innerHTML=`<p style="color:var(--text2);font-size:11px;margin:14px 0;font-family:var(--mono)"><span style="color:var(--green)">${_batchRows.length}</span> queries encontradas.</p><div class="batch-table-wrap"><table class="batch-table"><thead><tr><th>✓</th><th>Nombre</th><th>Categoría</th><th>BD</th><th>SQL</th></tr></thead><tbody>${_batchRows.map((r,i)=>`<tr style="opacity:${r.include?1:.4}"><td><input type="checkbox" ${r.include?'checked':''} onchange="_batchRows[${i}].include=this.checked;renderBatchPreview()"></td><td><input type="text" value="${esc(r.name)}" onchange="_batchRows[${i}].name=this.value"></td><td><input type="text" value="${esc(r.category)}" onchange="_batchRows[${i}].category=this.value"></td><td><input type="text" value="${esc(r.database)}" onchange="_batchRows[${i}].database=this.value"></td><td style="max-width:220px"><div class="batch-sql-preview"><code class="sql-code" style="font-size:10px">${highlightSQL(r.sql)}</code></div></td></tr>`).join('')}</tbody></table></div><div class="form-actions" style="margin-top:14px"><button class="btn" onclick="_batchRows=[];document.getElementById('batch-preview-area').innerHTML=''">← volver</button><button class="btn btn-primary" onclick="importBatch()">importar ${_batchRows.filter(r=>r.include).length} queries</button></div>`;}
+function importBatch(){const toImport=_batchRows.filter(r=>r.include&&r.name.trim()&&r.sql.trim());if(!toImport.length){showToast("sin queries válidas","error");return;}toImport.forEach(r=>{if(r.category&&!state.categories.includes(r.category))state.categories.push(r.category);const dbs=r.database.split(";").map(d=>d.trim()).filter(Boolean);dbs.forEach(d=>{if(!state.databases.includes(d))state.databases.push(d);});state.queries.push({id:genId(),name:r.name.trim(),description:"",sql:r.sql.trim(),category:r.category||"General",databases:dbs,createdAt:new Date().toISOString()});});saveState();closeModal();render();showToast(`${toImport.length} queries importadas`);}
 
-function deleteQuery(id) {
-  if (!confirm("¿Eliminar esta consulta?")) return;
-  state.queries = state.queries.filter(q => q.id !== id);
-  saveState(); render(); showToast("Consulta eliminada", "warn");
-}
-
-// ─── Categories ───
-function addCategory() {
-  const input = document.getElementById('new-cat-input');
-  const val = input.value.trim();
-  if (val && !state.categories.includes(val)) {
-    state.categories.push(val); saveState(); render(); showToast("Categoría creada");
-  }
-}
-
-function editCategoryPrompt(idx) {
-  const newName = prompt("Nuevo nombre:", state.categories[idx]);
-  if (newName && newName.trim() && !state.categories.includes(newName.trim())) {
-    const old = state.categories[idx];
-    state.categories[idx] = newName.trim();
-    state.queries.forEach(q => { if (q.category === old) q.category = newName.trim(); });
-    saveState(); render(); showToast("Categoría actualizada");
-  }
-}
-
-function deleteCategory(idx) {
-  const cat = state.categories[idx];
-  const count = state.queries.filter(q => q.category === cat).length;
-  if (count > 0 && !confirm(`${count} consultas asociadas. ¿Eliminar?`)) return;
-  state.categories.splice(idx, 1); saveState(); render(); showToast("Categoría eliminada", "warn");
-}
-
-// ─── Databases ───
-function addDatabase() {
-  const input = document.getElementById('new-db-input');
-  const val = input.value.trim();
-  if (val && !state.databases.includes(val)) {
-    state.databases.push(val); saveState(); render(); showToast("Base de datos agregada");
-  }
-}
-
-function editDatabasePrompt(idx) {
-  const newName = prompt("Nuevo nombre:", state.databases[idx]);
-  if (newName && newName.trim() && !state.databases.includes(newName.trim())) {
-    const old = state.databases[idx];
-    state.databases[idx] = newName.trim();
-    state.queries.forEach(q => { q.databases = q.databases.map(d => d === old ? newName.trim() : d); });
-    saveState(); render(); showToast("Base de datos actualizada");
-  }
-}
-
-function deleteDatabase(idx) {
-  const db = state.databases[idx];
-  const count = state.queries.filter(q => q.databases.includes(db)).length;
-  if (count > 0 && !confirm(`${count} consultas asociadas. ¿Eliminar?`)) return;
-  state.databases.splice(idx, 1); saveState(); render(); showToast("Base de datos eliminada", "warn");
-}
-
-// ─── Export / Import Backup ───
-function exportBackup() {
-  const data = JSON.stringify({ queries: state.queries, categories: state.categories, databases: state.databases, exportedAt: new Date().toISOString() }, null, 2);
-  const blob = new Blob([data], { type: "application/json" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  const now = new Date();
-  const dt = now.toISOString().slice(0,10);
-  const hr = String(now.getHours()).padStart(2,'0') + String(now.getMinutes()).padStart(2,'0') + String(now.getSeconds()).padStart(2,'0');
-  a.download = `sql_queries_backup_${dt}_${hr}.json`;
-  a.click(); URL.revokeObjectURL(a.href);
-  showToast("Backup exportado");
-}
-
-function importBackup(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    try {
-      const data = JSON.parse(ev.target.result);
-      if (data.queries) {
-        if (!confirm("Esto reemplazará todos los datos actuales con el backup. ¿Continuar?")) return;
-        state.queries = data.queries.map(q => ({ ...q, id: genId() }));
-        state.categories = data.categories && data.categories.length > 0 ? [...data.categories] : [];
-        state.databases = data.databases && data.databases.length > 0 ? [...data.databases] : [];
-        saveState(); render(); showToast(`${data.queries.length} consultas restauradas`);
-      }
-    } catch { showToast("Error al leer archivo", "error"); }
-  };
-  reader.readAsText(file); e.target.value = "";
-}
-
-function resetAll() {
-  if (!confirm("¿Eliminar TODOS los datos?")) return;
-  state.queries = []; state.categories = [...DEFAULT_CATEGORIES]; state.databases = [...DEFAULT_DATABASES];
-  localStorage.removeItem(STORAGE_KEY); render(); showToast("Datos reiniciados", "warn");
-}
-
-// ─── Import single file ───
-let _importContent = "";
-let _importDBs = [];
-
-function openImportModal() {
-  _importContent = ""; _importDBs = [];
-  openModal("Importar consulta", `
-    <div class="form-group">
-      <label class="label">Archivo (.sql, .csv, .txt)</label>
-      <label class="file-upload" id="import-file-label">
-        ⇧ Haz clic para seleccionar un archivo
-        <input type="file" accept=".sql,.csv,.txt" onchange="handleImportFile(event)">
-      </label>
-    </div>
-    <div id="import-form-area"></div>
-  `, 700);
-}
-
-function handleImportFile(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    _importContent = ev.target.result;
-    const name = file.name.replace(/\.(sql|csv|txt)$/i, "");
-    document.getElementById('import-file-label').textContent = "✓ Archivo cargado — Clic para cambiar";
-    document.getElementById('import-form-area').innerHTML = `
-      <div class="form-group">
-        <label class="label">Vista previa</label>
-        <div class="sql-preview"><code class="sql-code" style="font-size:11px">${highlightSQL(_importContent)}</code></div>
-      </div>
-      <div class="form-group"><label class="label">Nombre *</label><input id="imp-name" value="${esc(name)}"></div>
-      <div class="form-group"><label class="label">Descripción</label><input id="imp-desc" placeholder="Opcional"></div>
-      <div class="form-group">
-        <label class="label">Categoría *</label>
-        <div class="form-row">
-          <select id="imp-cat"><option value="">Seleccionar...</option>${state.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select>
-          <input id="imp-newcat" placeholder="Nueva" onkeydown="if(event.key==='Enter')addCatInImport()">
-          <button class="btn btn-secondary" onclick="addCatInImport()">+</button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label class="label">Bases de datos</label>
-        <div class="db-pills" id="imp-db-pills">${renderImportDBPills()}</div>
-        <div class="form-row">
-          <input id="imp-newdb" placeholder="Nueva BD" onkeydown="if(event.key==='Enter')addDBInImport()">
-          <button class="btn btn-secondary" onclick="addDBInImport()">+</button>
-        </div>
-      </div>
-      <div class="form-actions">
-        <button class="btn btn-secondary" onclick="closeModal()">Cancelar</button>
-        <button class="btn btn-primary" onclick="saveImportQuery()">Importar y guardar</button>
-      </div>`;
-  };
-  reader.readAsText(file);
-}
-
-function renderImportDBPills() {
-  return state.databases.map(db => `<button class="db-pill ${_importDBs.includes(db)?'active':''}" onclick="toggleImportDB('${esc(db)}')">${esc(db)}</button>`).join('');
-}
-function toggleImportDB(db) {
-  if (_importDBs.includes(db)) _importDBs = _importDBs.filter(d=>d!==db); else _importDBs.push(db);
-  document.getElementById('imp-db-pills').innerHTML = renderImportDBPills();
-}
-function addCatInImport() {
-  const v = document.getElementById('imp-newcat').value.trim();
-  if (!v) return;
-  if (state.categories.includes(v)) {
-    document.getElementById('imp-cat').value = v;
-    document.getElementById('imp-newcat').value = '';
-    return;
-  }
-  state.categories.push(v); saveState();
-  const s = document.getElementById('imp-cat');
-  const o = document.createElement('option');
-  o.value = v; o.textContent = v; s.appendChild(o);
-  s.value = v;
-  document.getElementById('imp-newcat').value = '';
-  showToast("Categoría '" + v + "' creada");
-}
-function addDBInImport() {
-  const v = document.getElementById('imp-newdb').value.trim();
-  if (v && !state.databases.includes(v)) { state.databases.push(v); _importDBs.push(v); saveState(); document.getElementById('imp-db-pills').innerHTML = renderImportDBPills(); document.getElementById('imp-newdb').value=''; }
-}
-function saveImportQuery() {
-  const name = document.getElementById('imp-name').value.trim();
-  const desc = document.getElementById('imp-desc').value.trim();
-  let cat = document.getElementById('imp-cat').value;
-  const newCatVal = document.getElementById('imp-newcat') ? document.getElementById('imp-newcat').value.trim() : '';
-
-  if (!cat && newCatVal) {
-    if (!state.categories.includes(newCatVal)) state.categories.push(newCatVal);
-    cat = newCatVal;
-  }
-
-  if (!name || !_importContent.trim() || !cat) { showToast("Completa nombre y categoría","error"); return; }
-  state.queries.push({ id: genId(), name, description: desc, sql: _importContent.trim(), category: cat, databases: [..._importDBs], createdAt: new Date().toISOString() });
-  saveState(); closeModal(); render(); showToast("Consulta importada");
-}
-
-// ─── Batch Import ───
-let _batchRows = [];
-
-function openBatchModal() {
-  _batchRows = [];
-  openModal("Importación por lote", `
-    <p style="color:#94a3b8;font-size:13px;line-height:1.6;margin-bottom:16px">
-      Importa múltiples consultas desde CSV. Columnas: <strong style="color:#e2e8f0">nombre, categoría, base_de_datos, consulta_sql</strong>.
-      Múltiples BDs separadas con <code style="color:#60a5fa">;</code>
-    </p>
-    <div style="display:flex;gap:10px">
-      <button class="btn btn-primary" onclick="downloadTemplate()">↓ Descargar plantilla</button>
-      <label class="btn btn-secondary" style="cursor:pointer">⇧ Cargar CSV<input type="file" accept=".csv" onchange="handleBatchFile(event)" style="display:none"></label>
-    </div>
-    <div id="batch-preview-area"></div>
-  `, 900);
-}
-
-function downloadTemplate() {
-  const csv = 'nombre,categoria,base_de_datos,consulta_sql\n"Ventas mensuales","Reportes","Oracle_Prod","SELECT month, SUM(amount) FROM sales GROUP BY month"\n"Usuarios activos","General","MySQL_Dev","SELECT COUNT(*) FROM users WHERE active = 1"';
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(new Blob([csv], {type:"text/csv"}));
-  a.download = "plantilla_importacion_sql.csv"; a.click();
-}
-
-function handleBatchFile(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    const lines = ev.target.result.split("\n").map(l=>l.trim()).filter(Boolean);
-    if (lines.length < 2) { showToast("Archivo vacío","error"); return; }
-    _batchRows = lines.slice(1).map(line => {
-      const c = parseCSVLine(line);
-      return { name: c[0]||"", category: c[1]||"", database: c[2]||"", sql: c[3]||"", include: true };
-    }).filter(r => r.sql.trim());
-    renderBatchPreview();
-  };
-  reader.readAsText(file);
-}
-
-function renderBatchPreview() {
-  document.getElementById('batch-preview-area').innerHTML = `
-    <p style="color:#94a3b8;font-size:13px;margin:16px 0"><strong style="color:#34d399">${_batchRows.length}</strong> consultas encontradas. Revisa antes de importar.</p>
-    <div class="batch-table-wrap">
-      <table class="batch-table">
-        <thead><tr><th>✓</th><th>Nombre</th><th>Categoría</th><th>Base de datos</th><th>SQL</th></tr></thead>
-        <tbody>
-          ${_batchRows.map((r,i) => `
-            <tr style="opacity:${r.include?1:0.4}">
-              <td><input type="checkbox" ${r.include?'checked':''} onchange="_batchRows[${i}].include=this.checked;renderBatchPreview()"></td>
-              <td><input type="text" value="${esc(r.name)}" onchange="_batchRows[${i}].name=this.value"></td>
-              <td><input type="text" value="${esc(r.category)}" onchange="_batchRows[${i}].category=this.value"></td>
-              <td><input type="text" value="${esc(r.database)}" onchange="_batchRows[${i}].database=this.value"></td>
-              <td style="max-width:250px"><div class="batch-sql-preview"><code class="sql-code" style="font-size:10px">${highlightSQL(r.sql)}</code></div></td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-    <div class="form-actions" style="margin-top:16px">
-      <button class="btn btn-secondary" onclick="_batchRows=[];document.getElementById('batch-preview-area').innerHTML=''">← Volver</button>
-      <button class="btn btn-primary" onclick="importBatch()">Importar ${_batchRows.filter(r=>r.include).length} consultas</button>
-    </div>`;
-}
-
-function importBatch() {
-  const toImport = _batchRows.filter(r => r.include && r.name.trim() && r.sql.trim());
-  if (!toImport.length) { showToast("No hay consultas válidas","error"); return; }
-  toImport.forEach(r => {
-    if (r.category && !state.categories.includes(r.category)) state.categories.push(r.category);
-    const dbs = r.database.split(";").map(d=>d.trim()).filter(Boolean);
-    dbs.forEach(d => { if (!state.databases.includes(d)) state.databases.push(d); });
-    state.queries.push({ id: genId(), name: r.name.trim(), description: "", sql: r.sql.trim(), category: r.category || "General", databases: dbs, createdAt: new Date().toISOString() });
-  });
-  saveState(); closeModal(); render(); showToast(`${toImport.length} consultas importadas por lote`);
-}
-
-// ─── Init ───
-loadState();
-initDriveToken();
-render();
+loadState();initDriveToken();render();
 </script>
 </body>
 </html>
