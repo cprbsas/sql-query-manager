@@ -234,6 +234,8 @@ const GDRIVE_CLIENT_ID='742085025396-7s3k6evr07j9m329ljquucv7mk1qijnn.apps.googl
 const GDRIVE_SCOPE='https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
 const GDRIVE_FILENAME='sql-query-manager-backup.json';
 const STORAGE_KEY="sqlqm-alldata";
+const DRIVE_FILEID_KEY="sqlqm-drive-fileid";
+const DRIVE_USER_KEY="sqlqm-drive-user";
 const DEFAULT_CATEGORIES=["General","Reportes","Mantenimiento","Auditoría","Consultas frecuentes"];
 const DEFAULT_DATABASES=["Oracle_Prod","MySQL_Dev","PostgreSQL_Analytics"];
 
@@ -258,6 +260,7 @@ function saveState(){
 }
 
 // ─── Drive ───
+// ─── Drive state (grouped to avoid global pollution) ───
 let driveToken=null,driveFileId=null,driveStatus='disconnected',driveUserName='',driveSyncTimer=null;
 function getDriveStatusLabel(){
   if(driveStatus==='syncing')return{label:'Sincronizando...',cls:'syncing'};
@@ -267,22 +270,22 @@ function getDriveStatusLabel(){
   return{label:'Conectar Drive',cls:''};
 }
 function initDriveToken(){
-  driveFileId=localStorage.getItem('sqlqm-drive-fileid')||null;
-  driveUserName=localStorage.getItem('sqlqm-drive-user')||'';
+  driveFileId=localStorage.getItem(DRIVE_FILEID_KEY)||null;
+  driveUserName=localStorage.getItem(DRIVE_USER_KEY)||'';
   driveStatus='disconnected';driveToken=null;
 }
 function connectDrive(){
   if(driveStatus==='connected'){
     if(!confirm(`Desconectar de Google Drive (${driveUserName})? Tus datos locales se mantienen.`))return;
     driveToken=null;driveFileId=null;driveUserName='';driveStatus='disconnected';
-    localStorage.removeItem('sqlqm-drive-fileid');localStorage.removeItem('sqlqm-drive-user');
+    localStorage.removeItem(DRIVE_FILEID_KEY);localStorage.removeItem(DRIVE_USER_KEY);
     updateDriveButton();return;
   }
   const client=google.accounts.oauth2.initTokenClient({client_id:GDRIVE_CLIENT_ID,scope:GDRIVE_SCOPE,
     callback:async(tr)=>{
       if(tr.error){driveStatus='error';updateDriveButton();return;}
       driveToken=tr.access_token;driveStatus='syncing';updateDriveButton();
-      try{const r=await fetch('https://www.googleapis.com/oauth2/v1/userinfo',{headers:{Authorization:`Bearer ${driveToken}`}});const u=await r.json();driveUserName=u.given_name||u.name||u.email||'Usuario';localStorage.setItem('sqlqm-drive-user',driveUserName);}catch(e){}
+      try{const r=await fetch('https://www.googleapis.com/oauth2/v1/userinfo',{headers:{Authorization:`Bearer ${driveToken}`}});const u=await r.json();driveUserName=u.given_name||u.name||u.email||'Usuario';localStorage.setItem(DRIVE_USER_KEY,driveUserName);}catch(e){}
       await loadFromDrive();
     }
   });
@@ -291,9 +294,12 @@ function connectDrive(){
 async function findOrCreateDriveFile(){
   const sr=await fetch(`https://www.googleapis.com/drive/v3/files?q=name='${GDRIVE_FILENAME}'+and+trashed=false&fields=files(id,name)`,{headers:{Authorization:`Bearer ${driveToken}`}});
   const sd=await sr.json();
-  if(sd.files&&sd.files.length>0){driveFileId=sd.files[0].id;localStorage.setItem('sqlqm-drive-fileid',driveFileId);return driveFileId;}
+  if(sd.files&&sd.files.length>0){driveFileId=sd.files[0].id;localStorage.setItem(DRIVE_FILEID_KEY,driveFileId);return driveFileId;}
   const cr=await fetch('https://www.googleapis.com/drive/v3/files',{method:'POST',headers:{Authorization:`Bearer ${driveToken}`,'Content-Type':'application/json'},body:JSON.stringify({name:GDRIVE_FILENAME,mimeType:'application/json'})});
-  const cd=await cr.json();driveFileId=cd.id;localStorage.setItem('sqlqm-drive-fileid',driveFileId);return driveFileId;
+  const cd=await cr.json();driveFileId=cd.id;localStorage.setItem(DRIVE_FILEID_KEY,driveFileId);return driveFileId;
+}
+function isValidBackup(data){
+  return data&&Array.isArray(data.queries)&&Array.isArray(data.categories)&&Array.isArray(data.databases);
 }
 async function loadFromDrive(){
   if(!driveToken)return;driveStatus='syncing';updateDriveButton();
@@ -306,6 +312,7 @@ async function loadFromDrive(){
     const text=await res.text();
     if(text&&text.trim().startsWith('{')){
       const data=JSON.parse(text);
+      if(!isValidBackup(data))throw new Error('Formato de backup inválido');
       if(data.queries&&data.queries.length>0){
         const driveDate=data.savedAt?new Date(data.savedAt):new Date(0);
         const localSaved=localStorage.getItem(STORAGE_KEY);const localData=localSaved?JSON.parse(localSaved):null;
@@ -354,7 +361,8 @@ function setSort(field){
 }
 function renderSortBar(){
   const di=state.sortDir==='asc'?'↑':'↓';
-  return SORT_OPTIONS.map(o=>`<button class="sort-btn ${state.sortField===o.field?'active':''}" onclick="setSort('${o.field}')">${o.label}${state.sortField===o.field?` <span class="sort-dir">${di}</span>`:''}</button>`).join('')+`<span class="result-count">${getFiltered().length} resultado${getFiltered().length!==1?'s':''}</span>`;
+  const count=getFiltered().length;
+  return SORT_OPTIONS.map(o=>`<button class="sort-btn ${state.sortField===o.field?'active':''}" onclick="setSort('${o.field}')">${o.label}${state.sortField===o.field?` <span class="sort-dir">${di}</span>`:''}</button>`).join('')+`<span class="result-count">${count} resultado${count!==1?'s':''}</span>`;
 }
 function getSorted(queries){
   return[...queries].sort((a,b)=>{
@@ -368,7 +376,7 @@ function getSorted(queries){
 function esc(str){const div=document.createElement('div');div.textContent=str;return div.innerHTML;}
 function highlightSQL(sql){
   if(!sql)return'<span class="sql-comment">-- sin consulta</span>';
-  const tokens=sql.split(/(\b\w+\b|'[^']*'|"[^"]*"|--[^\n]*|\n|[^\w\s\'""-]+|\s+)/g).filter(Boolean);
+  const tokens=sql.split(/(\b\w+\b|'(?:[^']|'')*'|"[^"]*"|--[^\n]*|\n|[^\w\s\'""-]+|\s+)/g).filter(Boolean);
   return tokens.map(token=>{
     if(/^--/.test(token))return`<span class="sql-comment">${esc(token)}</span>`;
     if(/^['"]/.test(token))return`<span class="sql-string">${esc(token)}</span>`;
@@ -450,9 +458,11 @@ function handleSearch(input){
 function renderQueryList(){
   const filtered=getSorted(getFiltered());
   if(filtered.length===0)return`<div class="empty"><div class="empty-icon">SELECT * FROM queries WHERE 1=0;</div><p class="empty-title">sin resultados</p><p class="empty-desc">crea o importa tu primera consulta</p></div>`;
+  const isFiltering=state.search||state.filterCat||state.filterDb;
   return filtered.map((q,idx)=>{
     const dateStr=q.createdAt?new Date(q.createdAt).toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'}):'';
-    return`<div class="query-card" style="animation:slideUp .25s ease ${idx*.025}s both" onclick="viewQuery('${q.id}')">
+    const anim=isFiltering?'':`animation:slideUp .25s ease ${idx*.025}s both`;
+    return`<div class="query-card" style="${anim}" onclick="viewQuery('${q.id}')">
       <div class="card-header">
         <div>
           <div class="card-title">${esc(q.name)}</div>
@@ -547,7 +557,7 @@ function openCreateModal(queryId){
     <div class="form-actions"><button class="btn" onclick="closeModal()">cancelar</button><button class="btn btn-primary" onclick="saveQueryFromModal()">${q?'guardar cambios':'crear query'}</button></div>
   `,700);
 }
-function renderDBPills(){return state.databases.map(db=>`<button class="db-pill ${_selectedDBs.includes(db)?'active':''}" onclick="toggleDBInModal('${esc(db)}')">${esc(db)}</button>`).join('');}
+function renderDBPills(){return state.databases.map(db=>`<button class="db-pill ${_selectedDBs.includes(db)?'active':''}" data-db="${esc(db)}" onclick="toggleDBInModal(this.dataset.db)">${esc(db)}</button>`).join('');}
 function toggleDBInModal(db){if(_selectedDBs.includes(db))_selectedDBs=_selectedDBs.filter(d=>d!==db);else _selectedDBs.push(db);document.getElementById('db-pills-container').innerHTML=renderDBPills();}
 function addCatInModal(){const input=document.getElementById('q-newcat');const val=input.value.trim();if(!val)return;if(state.categories.includes(val)){document.getElementById('q-cat').value=val;input.value='';return;}state.categories.push(val);saveState();const select=document.getElementById('q-cat');const opt=document.createElement('option');opt.value=val;opt.textContent=val;select.appendChild(opt);select.value=val;input.value='';showToast("cat '"+val+"' creada");}
 function addDBInModal(){const input=document.getElementById('q-newdb');const val=input.value.trim();if(val&&!state.databases.includes(val)){state.databases.push(val);_selectedDBs.push(val);saveState();document.getElementById('db-pills-container').innerHTML=renderDBPills();input.value='';}}
@@ -585,8 +595,13 @@ function editDatabasePrompt(idx){const newName=prompt("Nuevo nombre:",state.data
 function deleteDatabase(idx){const db=state.databases[idx];const count=state.queries.filter(q=>q.databases.includes(db)).length;if(count>0&&!confirm(`${count} queries asociadas. ¿Eliminar?`))return;state.databases.splice(idx,1);saveState();render();showToast("db eliminada","warn");}
 
 function exportBackup(){const data=JSON.stringify({queries:state.queries,categories:state.categories,databases:state.databases,exportedAt:new Date().toISOString()},null,2);const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([data],{type:"application/json"}));const now=new Date();const dt=now.toISOString().slice(0,10);const hr=String(now.getHours()).padStart(2,'0')+String(now.getMinutes()).padStart(2,'0');a.download=`sql_queries_backup_${dt}_${hr}.json`;a.click();URL.revokeObjectURL(a.href);showToast("backup exportado");}
-function importBackup(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=(ev)=>{try{const data=JSON.parse(ev.target.result);if(data.queries){if(!confirm("Reemplazará todos los datos actuales. ¿Continuar?"))return;state.queries=data.queries.map(q=>({...q,id:genId()}));state.categories=data.categories&&data.categories.length>0?[...data.categories]:[];state.databases=data.databases&&data.databases.length>0?[...data.databases]:[];saveState();render();showToast(`${data.queries.length} queries restauradas`);}}catch{showToast("error al leer archivo","error");}};reader.readAsText(file);e.target.value="";}
-function resetAll(){if(!confirm("¿Eliminar TODOS los datos?"))return;state.queries=[];state.categories=[...DEFAULT_CATEGORIES];state.databases=[...DEFAULT_DATABASES];localStorage.removeItem(STORAGE_KEY);render();showToast("datos reiniciados","warn");}
+function importBackup(e){const file=e.target.files[0];if(!file)return;const reader=new FileReader();reader.onload=(ev)=>{try{const data=JSON.parse(ev.target.result);if(!isValidBackup(data)){showToast("formato de backup inválido","error");return;}if(!confirm("Reemplazará todos los datos actuales. ¿Continuar?"))return;state.queries=data.queries.map(q=>({...q,id:genId()}));state.categories=data.categories.length>0?[...data.categories]:[];state.databases=data.databases.length>0?[...data.databases]:[];saveState();render();showToast(`${data.queries.length} queries restauradas`);}catch{showToast("error al leer archivo","error");}};reader.readAsText(file);e.target.value="";}
+function resetAll(){
+  const driveWarning=driveToken?"\n\nNota: los datos en Google Drive NO se borrarán. Al reconectar Drive, los datos volverán.":"";
+  if(!confirm("¿Eliminar TODOS los datos locales?"+driveWarning))return;
+  state.queries=[];state.categories=[...DEFAULT_CATEGORIES];state.databases=[...DEFAULT_DATABASES];
+  localStorage.removeItem(STORAGE_KEY);render();showToast("datos reiniciados","warn");
+}
 
 let _importContent="",_importDBs=[];
 function openImportModal(){
@@ -601,7 +616,7 @@ function handleImportFile(e){
     document.getElementById('import-form-area').innerHTML=`<div class="form-group"><label class="label">Vista previa</label><div class="sql-preview"><code class="sql-code" style="font-size:10px">${highlightSQL(_importContent)}</code></div></div><div class="form-group"><label class="label">Nombre *</label><input id="imp-name" value="${esc(name)}"></div><div class="form-group"><label class="label">Descripción</label><input id="imp-desc" placeholder="Opcional"></div><div class="form-group"><label class="label">Categoría *</label><div class="form-row"><select id="imp-cat"><option value="">seleccionar...</option>${state.categories.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('')}</select><input id="imp-newcat" placeholder="nueva" onkeydown="if(event.key==='Enter')addCatInImport()"><button class="btn" onclick="addCatInImport()">+</button></div></div><div class="form-group"><label class="label">Bases de datos</label><div class="db-pills" id="imp-db-pills">${renderImportDBPills()}</div><div class="form-row"><input id="imp-newdb" placeholder="nueva bd" onkeydown="if(event.key==='Enter')addDBInImport()"><button class="btn" onclick="addDBInImport()">+</button></div></div><div class="form-actions"><button class="btn" onclick="closeModal()">cancelar</button><button class="btn btn-primary" onclick="saveImportQuery()">importar</button></div>`;
   };reader.readAsText(file);
 }
-function renderImportDBPills(){return state.databases.map(db=>`<button class="db-pill ${_importDBs.includes(db)?'active':''}" onclick="toggleImportDB('${esc(db)}')">${esc(db)}</button>`).join('');}
+function renderImportDBPills(){return state.databases.map(db=>`<button class="db-pill ${_importDBs.includes(db)?'active':''}" data-db="${esc(db)}" onclick="toggleImportDB(this.dataset.db)">${esc(db)}</button>`).join('');}
 function toggleImportDB(db){if(_importDBs.includes(db))_importDBs=_importDBs.filter(d=>d!==db);else _importDBs.push(db);document.getElementById('imp-db-pills').innerHTML=renderImportDBPills();}
 function addCatInImport(){const v=document.getElementById('imp-newcat').value.trim();if(!v)return;if(state.categories.includes(v)){document.getElementById('imp-cat').value=v;document.getElementById('imp-newcat').value='';return;}state.categories.push(v);saveState();const s=document.getElementById('imp-cat');const o=document.createElement('option');o.value=v;o.textContent=v;s.appendChild(o);s.value=v;document.getElementById('imp-newcat').value='';showToast("cat '"+v+"' creada");}
 function addDBInImport(){const v=document.getElementById('imp-newdb').value.trim();if(v&&!state.databases.includes(v)){state.databases.push(v);_importDBs.push(v);saveState();document.getElementById('imp-db-pills').innerHTML=renderImportDBPills();document.getElementById('imp-newdb').value='';}}
