@@ -287,23 +287,23 @@ let driveUserName = '';
 let driveSyncTimer = null;
 
 function getDriveStatusLabel() {
-  if (driveStatus === 'disconnected') return { label: 'Conectar Drive', cls: '' };
   if (driveStatus === 'syncing') return { label: 'Sincronizando...', cls: 'syncing' };
-  if (driveStatus === 'error') return { label: 'Error Drive', cls: 'error' };
-  return { label: driveUserName ? `Drive: ${driveUserName}` : 'Drive conectado', cls: 'connected' };
+  if (driveStatus === 'error') return { label: 'Error Drive — Reintentar', cls: 'error' };
+  if (driveStatus === 'connected') return { label: driveUserName ? `Drive: ${driveUserName}` : 'Drive conectado', cls: 'connected' };
+  // disconnected
+  if (driveUserName) return { label: `Reconectar Drive (${driveUserName})`, cls: '' };
+  return { label: 'Conectar Drive', cls: '' };
 }
 
 function initDriveToken() {
-  const saved = localStorage.getItem('sqlqm-drive-token');
+  // OAuth tokens expire in ~1hr — never persist them across sessions.
+  // Only persist fileId and user name for UX hints.
   const savedFileId = localStorage.getItem('sqlqm-drive-fileid');
   const savedUser = localStorage.getItem('sqlqm-drive-user');
-  if (saved) {
-    driveToken = saved;
-    driveFileId = savedFileId || null;
-    driveUserName = savedUser || '';
-    driveStatus = 'connected';
-    loadFromDrive();
-  }
+  driveFileId = savedFileId || null;
+  driveUserName = savedUser || '';
+  driveStatus = 'disconnected';
+  driveToken = null;
 }
 
 function connectDrive() {
@@ -311,7 +311,6 @@ function connectDrive() {
     if (!confirm(`Desconectar tu cuenta de Google Drive (${driveUserName})? Tus datos locales se mantienen.`)) return;
     driveToken = null; driveFileId = null; driveUserName = '';
     driveStatus = 'disconnected';
-    localStorage.removeItem('sqlqm-drive-token');
     localStorage.removeItem('sqlqm-drive-fileid');
     localStorage.removeItem('sqlqm-drive-user');
     updateDriveButton();
@@ -380,26 +379,46 @@ async function loadFromDrive() {
     if (text && text.trim().startsWith('{')) {
       const data = JSON.parse(text);
       if (data.queries && data.queries.length > 0) {
-        // Merge: Drive wins if it has more recent savedAt
+        const driveDate = data.savedAt ? new Date(data.savedAt) : new Date(0);
         const localSaved = localStorage.getItem(STORAGE_KEY);
         const localData = localSaved ? JSON.parse(localSaved) : null;
-        const driveDate = data.savedAt ? new Date(data.savedAt) : new Date(0);
         const localDate = localData && localData.savedAt ? new Date(localData.savedAt) : new Date(0);
-        if (driveDate >= localDate) {
-          state.queries = data.queries || [];
-          state.categories = data.categories && data.categories.length > 0 ? data.categories : state.categories;
-          state.databases = data.databases && data.databases.length > 0 ? data.databases : state.databases;
-          saveState();
-          render();
-          showToast(`Drive: ${state.queries.length} consultas cargadas`);
+        const localHasData = localData && localData.queries && localData.queries.length > 0;
+
+        if (localHasData && localDate > driveDate) {
+          // Local is newer — ask user which to keep
+          const keepLocal = confirm(
+            `Drive tiene ${data.queries.length} consultas (${driveDate.toLocaleString('es-CO')}).\n` +
+            `Local tiene ${localData.queries.length} consultas (${localDate.toLocaleString('es-CO')}).\n\n` +
+            `¿Mantener datos LOCALES y subir a Drive?\n(Cancelar = cargar datos de Drive)`
+          );
+          if (keepLocal) {
+            // Push local to Drive
+            driveStatus = 'connected'; updateDriveButton();
+            await saveToDrive();
+            showToast(`Drive actualizado con ${state.queries.length} consultas locales`);
+            return;
+          }
         }
+        // Load Drive data
+        state.queries = data.queries || [];
+        state.categories = data.categories && data.categories.length > 0 ? data.categories : state.categories;
+        state.databases = data.databases && data.databases.length > 0 ? data.databases : state.databases;
+        saveState();
+        render();
+        showToast(`Drive: ${state.queries.length} consultas cargadas`);
+      } else {
+        // Drive file is empty — push local data up
+        driveStatus = 'connected'; updateDriveButton();
+        await saveToDrive();
+        showToast('Drive sincronizado');
+        return;
       }
     }
     driveStatus = 'connected'; updateDriveButton();
-    scheduleDriveSync();
   } catch(e) {
     if (e.message && e.message.includes('401')) {
-      driveToken = null; localStorage.removeItem('sqlqm-drive-token');
+      driveToken = null;
       driveStatus = 'disconnected';
     } else {
       driveStatus = 'error';
