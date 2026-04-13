@@ -199,7 +199,7 @@ select option { background: #1a1d23; color: #e2e8f0; }
 // ═══════════════════════════════════════════════════
 
 const GDRIVE_CLIENT_ID = '742085025396-7s3k6evr07j9m329ljquucv7mk1qijnn.apps.googleusercontent.com';
-const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
 const GDRIVE_FILENAME = 'sql-query-manager-backup.json';
 
 const STORAGE_KEY = "sqlqm-alldata";
@@ -319,11 +319,11 @@ function connectDrive() {
 
   const client = google.accounts.oauth2.initTokenClient({
     client_id: GDRIVE_CLIENT_ID,
-    scope: GDRIVE_SCOPE + ' https://www.googleapis.com/auth/userinfo.profile',
+    scope: GDRIVE_SCOPE,
     callback: async (tokenResponse) => {
       if (tokenResponse.error) { driveStatus = 'error'; updateDriveButton(); return; }
       driveToken = tokenResponse.access_token;
-      localStorage.setItem('sqlqm-drive-token', driveToken);
+      
       driveStatus = 'syncing';
       updateDriveButton();
       // Get user name
@@ -340,9 +340,9 @@ function connectDrive() {
 }
 
 async function findOrCreateDriveFile() {
-  // Search in appDataFolder
+  // Search in regular Drive
   const searchRes = await fetch(
-    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${GDRIVE_FILENAME}'&fields=files(id,name)`,
+    `https://www.googleapis.com/drive/v3/files?q=name='${GDRIVE_FILENAME}'+and+trashed=false&fields=files(id,name)`,
     { headers: { Authorization: `Bearer ${driveToken}` } }
   );
   const searchData = await searchRes.json();
@@ -351,8 +351,8 @@ async function findOrCreateDriveFile() {
     localStorage.setItem('sqlqm-drive-fileid', driveFileId);
     return driveFileId;
   }
-  // Create new file
-  const meta = { name: GDRIVE_FILENAME, parents: ['appDataFolder'] };
+  // Create new file in Drive root
+  const meta = { name: GDRIVE_FILENAME, mimeType: 'application/json' };
   const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
     method: 'POST',
     headers: { Authorization: `Bearer ${driveToken}`, 'Content-Type': 'application/json' },
