@@ -40,7 +40,7 @@ function getDriveStatusLabel(){
 function initDriveToken(){
   driveFileId=localStorage.getItem(DRIVE_FILEID_KEY)||null;
   driveUserName=localStorage.getItem(DRIVE_USER_KEY)||'';
-  driveStatus='disconnected';driveToken=null;
+  driveStatus=driveUserName?'syncing':'disconnected';driveToken=null;
 }
 function connectDrive(){
   if(driveStatus==='connected'){
