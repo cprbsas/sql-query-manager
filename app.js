@@ -34,13 +34,13 @@ function getDriveStatusLabel(){
   if(driveStatus==='syncing')return{label:'Sincronizando...',cls:'syncing'};
   if(driveStatus==='error')return{label:'Error — Reintentar',cls:'error'};
   if(driveStatus==='connected')return{label:driveUserName?`${driveUserName}`:'Drive OK',cls:'connected'};
-  if(driveUserName)return{label:`Reconectar`,cls:''};
+  if(driveUserName)return{label:`↩ Reconectar (${driveUserName})`,cls:''};
   return{label:'Conectar Drive',cls:''};
 }
 function initDriveToken(){
   driveFileId=localStorage.getItem(DRIVE_FILEID_KEY)||null;
   driveUserName=localStorage.getItem(DRIVE_USER_KEY)||'';
-  driveStatus=driveUserName?'syncing':'disconnected';driveToken=null;
+  driveStatus='disconnected';driveToken=null;
 }
 function connectDrive(){
   if(driveStatus==='connected'){
@@ -400,4 +400,4 @@ function handleBatchFile(e){const file=e.target.files[0];if(!file)return;const r
 function renderBatchPreview(){document.getElementById('batch-preview-area').innerHTML=`<p style="color:var(--text2);font-size:11px;margin:14px 0;font-family:var(--mono)"><span style="color:var(--green)">${_batchRows.length}</span> queries encontradas.</p><div class="batch-table-wrap"><table class="batch-table"><thead><tr><th>✓</th><th>Nombre</th><th>Categoría</th><th>BD</th><th>SQL</th></tr></thead><tbody>${_batchRows.map((r,i)=>`<tr style="opacity:${r.include?1:.4}"><td><input type="checkbox" ${r.include?'checked':''} onchange="_batchRows[${i}].include=this.checked;renderBatchPreview()"></td><td><input type="text" value="${esc(r.name)}" onchange="_batchRows[${i}].name=this.value"></td><td><input type="text" value="${esc(r.category)}" onchange="_batchRows[${i}].category=this.value"></td><td><input type="text" value="${esc(r.database)}" onchange="_batchRows[${i}].database=this.value"></td><td style="max-width:220px"><div class="batch-sql-preview"><code class="sql-code" style="font-size:10px">${highlightSQL(r.sql)}</code></div></td></tr>`).join('')}</tbody></table></div><div class="form-actions" style="margin-top:14px"><button class="btn" onclick="_batchRows=[];document.getElementById('batch-preview-area').innerHTML=''">← volver</button><button class="btn btn-primary" onclick="importBatch()">importar ${_batchRows.filter(r=>r.include).length} queries</button></div>`;}
 function importBatch(){const toImport=_batchRows.filter(r=>r.include&&r.name.trim()&&r.sql.trim());if(!toImport.length){showToast("sin queries válidas","error");return;}toImport.forEach(r=>{if(r.category&&!state.categories.includes(r.category))state.categories.push(r.category);const dbs=r.database.split(";").map(d=>d.trim()).filter(Boolean);dbs.forEach(d=>{if(!state.databases.includes(d))state.databases.push(d);});state.queries.push({id:genId(),name:r.name.trim(),description:"",sql:r.sql.trim(),category:r.category||"General",databases:dbs,createdAt:new Date().toISOString()});});saveState();closeModal();render();showToast(`${toImport.length} queries importadas`);}
 
-loadState();initDriveToken();render();if(driveUserName){setTimeout(()=>{if(driveStatus==='syncing'){driveStatus='disconnected';updateDriveButton();}},5000);connectDrive();}
+loadState();initDriveToken();render();// no auto-reconectar: los popups de OAuth requieren clic del usuario
