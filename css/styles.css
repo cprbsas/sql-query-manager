@@ -568,19 +568,358 @@ button[type="button"] {
   font-family: inherit;
 }
 
-/* Mejoras móvil: header colapsable cuando es muy estrecho */
-@media (max-width: 720px) {
-  .header {
+/* ─────────────────────────────────────── */
+/*  Diseño móvil — tablet y celulares       */
+/* ─────────────────────────────────────── */
+
+/* Tablets y móviles grandes (max 900px) */
+@media (max-width: 900px) {
+  .body {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid var(--bg3);
+    padding: 8px 12px;
+    flex-direction: row;
     flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    overflow-x: auto;
+  }
+  .sidebar-btn {
+    flex: 0 0 auto;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+  .sidebar-label,
+  .sidebar-filters {
+    width: 100%;
+    margin-top: 4px;
+  }
+  .sidebar-filters {
+    display: flex;
     gap: 8px;
   }
-  .header-actions {
-    flex-wrap: wrap;
-    width: 100%;
+  .sidebar-filters select {
+    flex: 1;
+    min-width: 0;
   }
-  .header-actions .btn {
+  .main {
+    padding: 14px;
+  }
+}
+
+/* Móviles (max 600px) — iPhone, Android estándar */
+@media (max-width: 600px) {
+  /* Soporte safe-area para notch / dynamic island */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Header en 2 filas: título arriba, acciones abajo */
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px;
+  }
+  .header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .header-logo {
+    font-size: 14px;
+  }
+  .header-meta {
     font-size: 11px;
+  }
+
+  /* Acciones del header en scroll horizontal — patrón nativo móvil */
+  .header-actions {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
+    margin: 0 -12px;
+    padding-left: 12px;
+    padding-right: 12px;
+    scrollbar-width: thin;
+  }
+  .header-actions::-webkit-scrollbar {
+    height: 3px;
+  }
+  .header-actions::-webkit-scrollbar-thumb {
+    background: var(--bg4);
+    border-radius: 3px;
+  }
+  .header-actions .btn,
+  .header-actions .drive-btn,
+  .header-actions .restore-label {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 38px;
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  /* Sidebar como tabs horizontales arriba */
+  .sidebar {
+    padding: 10px 12px 8px;
+    gap: 6px;
+  }
+  .sidebar-btn {
+    flex: 1;
+    justify-content: center;
+    padding: 10px 8px;
+    min-height: 42px;
+    font-size: 12px;
+  }
+  .sidebar-icon {
+    margin-right: 4px;
+  }
+  .sidebar-count {
+    font-size: 10px;
+    margin-left: 4px;
+  }
+
+  /* Filtros colapsados en una línea */
+  .sidebar-label {
+    font-size: 10px;
+    margin-top: 8px;
+    margin-bottom: 4px;
+  }
+  .sidebar-filters {
+    flex-direction: row;
+    gap: 6px;
+  }
+  .sidebar-filters .label {
+    display: none;  /* ahorrar espacio en móvil */
+  }
+  .sidebar-filters select {
+    flex: 1;
+    font-size: 13px;
+    padding: 8px 6px;
+    min-height: 38px;
+  }
+
+  /* Main content más compacto */
+  .main {
+    padding: 12px;
+  }
+
+  /* Buscador */
+  .search-wrap {
+    margin-bottom: 12px;
+  }
+  .search-input {
+    font-size: 16px;  /* clave: evita zoom automático en iOS */
+    padding: 12px 12px 12px 36px;
+    min-height: 44px;
+  }
+
+  /* Sort bar */
+  .sort-bar {
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .sort-btn {
+    flex: 0 0 auto;
     padding: 6px 10px;
+    font-size: 11px;
+  }
+  .result-count {
+    width: 100%;
+    text-align: right;
+    font-size: 11px;
+    margin-top: 4px;
+  }
+
+  /* Tarjetas de queries más amigables al dedo */
+  .query-card {
+    padding: 12px;
+    margin-bottom: 10px;
+  }
+  .card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .card-title {
+    font-size: 14px;
+  }
+  .card-desc {
+    font-size: 12px;
+  }
+  .card-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+  }
+  .card-actions .btn {
+    flex: 1;
+    min-height: 36px;
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+  .card-sql {
+    max-height: 120px;
+    overflow: auto;
+    font-size: 11px;
+  }
+
+  /* Empty state mucho más compacto en móvil */
+  .empty {
+    padding: 30px 16px;
+  }
+  .empty-icon {
+    font-size: 13px;  /* antes era enorme */
+    line-height: 1.4;
+    word-break: break-word;
+    opacity: 0.4;
+  }
+  .empty-title {
+    font-size: 14px;
+    margin-top: 12px;
+  }
+  .empty-desc {
+    font-size: 12px;
+  }
+
+  /* Modales ocupan casi toda la pantalla */
+  .modal-overlay {
+    padding: 0;
+    align-items: stretch;
+  }
+  .modal {
+    max-width: 100% !important;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+  .modal-header {
+    padding: 14px 16px;
+    position: sticky;
+    top: 0;
+    background: var(--bg1);
+    z-index: 1;
+    border-bottom: 1px solid var(--bg3);
+  }
+  .modal-body {
+    padding: 16px;
+    padding-bottom: 32px;
+  }
+
+  /* Inputs y selects: 16px para evitar zoom iOS, alto cómodo */
+  .modal input[type="text"],
+  .modal input[type="search"],
+  .modal textarea,
+  .modal select {
+    font-size: 16px;
+    min-height: 44px;
+    padding: 10px 12px;
+  }
+  .modal textarea {
+    min-height: 120px;
+  }
+
+  /* Form rows en modales: apilar en móvil */
+  .form-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 6px;
+  }
+  .form-row .btn {
+    min-height: 40px;
+  }
+
+  /* Pills de bases de datos: más toques amigables */
+  .db-pills {
+    gap: 6px;
+  }
+  .db-pill {
+    min-height: 38px;
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  /* Form actions: botones full-width */
+  .form-actions {
+    flex-direction: column-reverse;  /* primario arriba en móvil */
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .form-actions .btn {
+    width: 100%;
+    min-height: 44px;
+    font-size: 13px;
+    justify-content: center;
+  }
+  .form-actions .btn:nth-of-type(1) {
+    order: 2;
+  }
+
+  /* Tabla de batch — scroll horizontal */
+  .batch-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .batch-table {
+    font-size: 11px;
+    min-width: 600px;
+  }
+
+  /* Toast: más arriba en móvil para evitar el área del teclado */
+  .toast {
+    bottom: 20px;
+    left: 12px;
+    right: 12px;
+    max-width: none;
+    font-size: 13px;
+  }
+
+  /* Diálogos de confirmación: mensaje más legible */
+  .dialog-message {
+    font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* Items en listas de categorías/databases */
+  .item-row {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+  }
+  .item-row .btn {
+    min-height: 36px;
+  }
+}
+
+/* Móviles muy pequeños (iPhone SE, etc.) */
+@media (max-width: 380px) {
+  .header-actions .btn,
+  .header-actions .drive-btn,
+  .header-actions .restore-label {
+    font-size: 11px;
+    padding: 8px 10px;
+  }
+  .sidebar-btn {
+    font-size: 11px;
+    padding: 8px 6px;
+  }
+  .main {
+    padding: 10px;
   }
 }
 
@@ -593,9 +932,4 @@ button[type="button"] {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
-
-/* Dark mode (preview básico — opcional) */
-@media (prefers-color-scheme: dark) {
-  /* Para un futuro dark mode — placeholder, no activo aún */
 }
