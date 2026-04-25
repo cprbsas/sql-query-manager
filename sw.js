@@ -1,7 +1,7 @@
 // Service Worker — cachea la app shell para uso offline
 // Estrategia: cache-first para assets propios, network-first para Google APIs (no las cacheamos)
 
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.0.1';
 const CACHE_NAME = `sql-lib-${CACHE_VERSION}`;
 
 // App shell: lo mínimo para que la UI cargue offline
