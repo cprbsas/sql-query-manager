@@ -1,0 +1,26 @@
+{
+  "name": "Biblioteca de consultas SQL",
+  "short_name": "SQL Lib",
+  "description": "Biblioteca personal de consultas SQL con sincronización a Google Drive",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f8f7f5",
+  "theme_color": "#3b5bdb",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%233b5bdb' rx='32'/><text x='96' y='130' text-anchor='middle' font-size='100' font-family='monospace' font-weight='600' fill='white'>SQL</text></svg>",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%233b5bdb' rx='80'/><text x='256' y='340' text-anchor='middle' font-size='260' font-family='monospace' font-weight='600' fill='white'>SQL</text></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

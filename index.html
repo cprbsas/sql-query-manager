@@ -2,15 +2,47 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Biblioteca de consultas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#3b5bdb">
+<meta name="description" content="Biblioteca personal de consultas SQL con sincronización a Google Drive">
+
+<!--
+  Content Security Policy
+
+  Notas:
+  - 'unsafe-inline' en script-src es necesario porque Google Identity Services
+    (gsi/client) ejecuta código inline para inicializar el flujo OAuth.
+    Como TODO nuestro propio código vive en módulos externos (./js/...),
+    no introducimos scripts inline propios — el 'unsafe-inline' solo permite
+    los inlines de Google, ya restringidos por dominio.
+-->
+<meta http-equiv="Content-Security-Policy" content="
+  default-src 'self';
+  script-src 'self' 'unsafe-inline' https://accounts.google.com https://apis.google.com;
+  style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+  font-src https://fonts.gstatic.com data:;
+  img-src 'self' data: blob:;
+  connect-src 'self' https://www.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://content.googleapis.com;
+  frame-src https://accounts.google.com;
+  object-src 'none';
+  base-uri 'self';
+">
+
+<title>Biblioteca de consultas SQL</title>
+
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>_</text></svg>">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="./manifest.webmanifest?v=2.0.0">
+
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./css/styles.css?v=2.0.0">
+
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-<div id="app"></div>
-<script src="app.js"></script>
+<div id="app" role="application" aria-label="Biblioteca de consultas SQL"></div>
+<noscript>
+  <p style="padding:2em;font-family:sans-serif">Esta aplicación requiere JavaScript habilitado.</p>
+</noscript>
+<script type="module" src="./js/main.js?v=2.0.0"></script>
 </body>
 </html>
