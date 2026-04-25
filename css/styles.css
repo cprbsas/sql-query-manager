@@ -474,11 +474,8 @@ select option{background:var(--bg1);color:var(--text0)}
 /* ─── SECTION TITLES ─── */
 h2,h3{font-family:var(--sans);font-weight:600;color:var(--text0)}
 
-@media(max-width:768px){
-  .sidebar{display:none}
-  .header{padding:0 16px}
-  .main{padding:14px 16px}
-}
+/* Las reglas móviles viejas se eliminaron — ahora viven al final del archivo
+   con un diseño completo para tablet y celular */
 
 /* ─────────────────────────────────────── */
 /* Adiciones v2: accesibilidad y modales   */
@@ -578,6 +575,7 @@ button[type="button"] {
     flex-direction: column;
   }
   .sidebar {
+    display: flex !important;   /* sobrescribe cualquier display:none heredado */
     width: 100%;
     border-right: none;
     border-bottom: 1px solid var(--bg3);
@@ -627,6 +625,8 @@ button[type="button"] {
     align-items: stretch;
     gap: 10px;
     padding: 12px;
+    height: auto;          /* clave: sobrescribe el height:54px de desktop */
+    min-height: auto;
   }
   .header-left {
     display: flex;
@@ -638,6 +638,8 @@ button[type="button"] {
   }
   .header-meta {
     font-size: 11px;
+    padding-left: 0;       /* sin padding lateral cuando está apilado */
+    border-left: none;     /* sin línea separadora vertical */
   }
 
   /* Acciones del header en scroll horizontal — patrón nativo móvil */
