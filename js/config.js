@@ -1,6 +1,6 @@
 // Configuración global de la aplicación
 
-export const APP_VERSION = '2.0.0';
+export const APP_VERSION = '2.1.0';
 
 export const GDRIVE_CLIENT_ID = '742085025396-7s3k6evr07j9m329ljquucv7mk1qijnn.apps.googleusercontent.com';
 export const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
@@ -16,8 +16,12 @@ export const DEFAULT_DATABASES = ['Oracle_Prod', 'MySQL_Dev', 'PostgreSQL_Analyt
 // Límites
 export const MAX_IMPORT_FILE_SIZE = 5 * 1024 * 1024;   // 5 MB
 export const MAX_BATCH_FILE_SIZE = 10 * 1024 * 1024;   // 10 MB
+export const MAX_DICT_FILE_SIZE = 15 * 1024 * 1024;    // 15 MB (Excel diccionarios)
 export const SEARCH_DEBOUNCE_MS = 180;
 export const DRIVE_SYNC_DEBOUNCE_MS = 1500;
+
+// SheetJS (xlsx parser) — se carga dinámicamente desde CDN
+export const SHEETJS_CDN = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.full.min.js';
 
 // Sort
 export const SORT_OPTIONS = [

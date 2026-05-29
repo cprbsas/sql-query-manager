@@ -7,12 +7,16 @@ export const state = {
   queries: [],
   categories: [],
   databases: [],
+  dictionaries: [],          // diccionarios de bases de datos importados desde Excel
   activeTab: 'queries',
   search: '',
   filterCat: '',
   filterDb: '',
   sortField: 'createdAt',
   sortDir: 'desc',
+  // Estado UI específico del módulo diccionarios (no se persiste)
+  dictSearch: '',
+  dictActiveId: null,
   // Hook que dispara saveState automático cuando cambian los datos persistidos
   // (lo establece main.js — desacoplamos de Drive aquí)
   _onPersist: null,
@@ -26,14 +30,17 @@ export function loadState() {
       state.queries = Array.isArray(parsed.queries) ? parsed.queries : [];
       state.categories = Array.isArray(parsed.categories) ? parsed.categories : [];
       state.databases = Array.isArray(parsed.databases) ? parsed.databases : [];
+      state.dictionaries = Array.isArray(parsed.dictionaries) ? parsed.dictionaries : [];
     } else {
       state.categories = [...DEFAULT_CATEGORIES];
       state.databases = [...DEFAULT_DATABASES];
+      state.dictionaries = [];
     }
   } catch (err) {
     console.error('Error cargando estado local:', err);
     state.categories = [...DEFAULT_CATEGORIES];
     state.databases = [...DEFAULT_DATABASES];
+    state.dictionaries = [];
   }
 }
 
@@ -49,6 +56,7 @@ export function saveState() {
         queries: state.queries,
         categories: state.categories,
         databases: state.databases,
+        dictionaries: state.dictionaries,
         savedAt: new Date().toISOString(),
       })
     );
@@ -90,12 +98,16 @@ export function replaceFromBackup(backup, { regenerateIds = false } = {}) {
       state.queries = backup.queries.map(q => ({ ...q, id: genId() }));
       state.categories = backup.categories.length ? [...backup.categories] : [];
       state.databases = backup.databases.length ? [...backup.databases] : [];
+      state.dictionaries = Array.isArray(backup.dictionaries)
+        ? backup.dictionaries.map(d => ({ ...d, id: genId() }))
+        : [];
       return true;
     });
   }
   state.queries = [...backup.queries];
   state.categories = backup.categories.length ? [...backup.categories] : [];
   state.databases = backup.databases.length ? [...backup.databases] : [];
+  state.dictionaries = Array.isArray(backup.dictionaries) ? [...backup.dictionaries] : [];
   return true;
 }
 
@@ -106,5 +118,6 @@ export function resetState() {
   state.queries = [];
   state.categories = [...DEFAULT_CATEGORIES];
   state.databases = [...DEFAULT_DATABASES];
+  state.dictionaries = [];
   localStorage.removeItem(STORAGE_KEY);
 }

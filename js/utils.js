@@ -13,12 +13,12 @@ export function esc(str) {
 /**
  * Genera un ID único usando crypto.randomUUID con fallback.
  */
-export function genId() {
+export function genId(prefix = 'q') {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    return `q_${crypto.randomUUID()}`;
+    return `${prefix}_${crypto.randomUUID()}`;
   }
   // Fallback para navegadores muy viejos
-  return `q_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
 /**
@@ -67,6 +67,7 @@ export function compareStrings(a, b) {
 
 /**
  * Valida que un objeto tenga la forma de un backup válido.
+ * `dictionaries` es opcional para mantener compatibilidad con backups v2.0.
  */
 export function isValidBackup(data) {
   return (
@@ -74,7 +75,8 @@ export function isValidBackup(data) {
     typeof data === 'object' &&
     Array.isArray(data.queries) &&
     Array.isArray(data.categories) &&
-    Array.isArray(data.databases)
+    Array.isArray(data.databases) &&
+    (data.dictionaries === undefined || Array.isArray(data.dictionaries))
   );
 }
 

@@ -245,7 +245,8 @@ export async function loadFromDrive(rerender) {
     if (localHas) {
       const sameContent = JSON.stringify(localData.queries) === JSON.stringify(data.queries) &&
                           JSON.stringify(localData.categories) === JSON.stringify(data.categories) &&
-                          JSON.stringify(localData.databases) === JSON.stringify(data.databases);
+                          JSON.stringify(localData.databases) === JSON.stringify(data.databases) &&
+                          JSON.stringify(localData.dictionaries || []) === JSON.stringify(data.dictionaries || []);
       if (sameContent) {
         drive.status = 'connected';
         notify();
@@ -290,6 +291,7 @@ export async function loadFromDrive(rerender) {
     state.queries = data.queries;
     state.categories = data.categories.length ? data.categories : state.categories;
     state.databases = data.databases.length ? data.databases : state.databases;
+    state.dictionaries = Array.isArray(data.dictionaries) ? data.dictionaries : [];
     saveState();
     drive.status = 'connected';
     notify();
@@ -318,6 +320,7 @@ export async function saveToDrive() {
       queries: state.queries,
       categories: state.categories,
       databases: state.databases,
+      dictionaries: state.dictionaries,
       savedAt: new Date().toISOString(),
     });
     const res = await fetch(
@@ -380,6 +383,7 @@ export function flushOnUnload() {
           queries: state.queries,
           categories: state.categories,
           databases: state.databases,
+          dictionaries: state.dictionaries,
           savedAt: new Date().toISOString(),
         }),
         keepalive: true,
