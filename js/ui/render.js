@@ -164,7 +164,7 @@ function setupGlobalListeners() {
       case 'edit-db': editDatabasePrompt(parseInt(target.dataset.idx, 10), render); break;
       case 'delete-db': deleteDatabase(parseInt(target.dataset.idx, 10), render); break;
       case 'dict-view-table': {
-        viewTable(target.dataset.dictId, parseInt(target.dataset.tableIdx, 10));
+        viewTable(target.dataset.dictId, parseInt(target.dataset.tableIdx, 10), state.dictSearch || '');
         break;
       }
       case 'dict-rename': renameDictionary(target.dataset.dictId, render); break;

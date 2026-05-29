@@ -11,18 +11,19 @@ import { openModal, closeModal } from './modal.js';
 import { parseExcelDictionary } from '../xlsx-parser.js';
 
 // ─── Búsqueda ───
-// Devuelve { tables: [...], total: number } donde cada item es
-// { dictId, dictName, tableIdx, table, matches: [{type, text}] }
+// Devuelve { groups: [{dictId, dictName, results: [...]}], totalTables: n }
+// donde cada result es { tableIdx, table, matches, totalMatches }
 function searchAllDictionaries(term) {
   const q = normalize(term);
-  if (!q) return { tables: [], total: 0 };
+  if (!q) return { groups: [], totalTables: 0 };
 
-  const results = [];
+  const groups = [];
+  let totalTables = 0;
   for (const dict of state.dictionaries) {
+    const results = [];
     dict.tables.forEach((table, tableIdx) => {
       const matches = [];
 
-      // Match en metadata de tabla
       const metaFields = [
         { type: 'Table ID', text: table.tableId },
         { type: 'Entity Name', text: table.entityName },
@@ -35,7 +36,6 @@ function searchAllDictionaries(term) {
         }
       }
 
-      // Match en columnas (nombre, descripción, attribute)
       for (const col of table.columns) {
         if (col.columnName && normalize(col.columnName).includes(q)) {
           matches.push({ type: 'Column', text: col.columnName, desc: col.description });
@@ -48,17 +48,19 @@ function searchAllDictionaries(term) {
 
       if (matches.length > 0) {
         results.push({
-          dictId: dict.id,
-          dictName: dict.name,
           tableIdx,
           table,
-          matches: matches.slice(0, 5), // máx 5 matches mostrados por tabla
+          matches: matches.slice(0, 5),
           totalMatches: matches.length,
         });
       }
     });
+    if (results.length > 0) {
+      groups.push({ dictId: dict.id, dictName: dict.name, results });
+      totalTables += results.length;
+    }
   }
-  return { tables: results, total: results.length };
+  return { groups, totalTables };
 }
 
 // ─── Render principal ───
@@ -77,14 +79,18 @@ export function renderDictionariesPanel() {
       </div>
     `;
   } else if (term.trim()) {
-    const { tables, total } = searchAllDictionaries(term);
-    if (total === 0) {
+    const { groups, totalTables } = searchAllDictionaries(term);
+    if (totalTables === 0) {
       body = `<div class="empty-state"><p>Sin coincidencias para "<strong>${esc(term)}</strong>".</p></div>`;
     } else {
+      const dictsWithMatches = groups.length;
       body = `
-        <div class="dict-results-summary">${total} ${total === 1 ? 'tabla coincide' : 'tablas coinciden'}</div>
+        <div class="dict-results-summary">
+          ${totalTables} ${totalTables === 1 ? 'tabla coincide' : 'tablas coinciden'}
+          ${dictsWithMatches > 1 ? ` en ${dictsWithMatches} diccionarios` : ''}
+        </div>
         <div class="dict-results">
-          ${tables.map(renderSearchResult).join('')}
+          ${groups.map(renderResultGroup).join('')}
         </div>
       `;
     }
@@ -121,13 +127,23 @@ export function renderDictionariesPanel() {
 
 function renderDictCard(dict) {
   const tableCount = dict.tables ? dict.tables.length : 0;
+  // Conteo total de columnas e índices a través de todas las tablas
+  let totalCols = 0;
+  let totalIdx = 0;
+  const subSystems = new Set();
+  (dict.tables || []).forEach(t => {
+    totalCols += (t.columns || []).length;
+    totalIdx += (t.indexes || []).length;
+    if (t.subSystem) subSystems.add(t.subSystem);
+  });
+  const subList = Array.from(subSystems);
   return `
     <div class="dict-card" data-dict-id="${esc(dict.id)}">
       <div class="dict-card-header">
         <div>
           <div class="dict-card-title">${esc(dict.name)}</div>
           <div class="dict-card-meta">
-            ${tableCount} ${tableCount === 1 ? 'tabla' : 'tablas'} · importado ${esc(formatDateTime(dict.importedAt))}
+            ${esc(dict.sourceFile || '')} · importado ${esc(formatDateTime(dict.importedAt))}
           </div>
         </div>
         <div class="dict-card-actions">
@@ -135,32 +151,59 @@ function renderDictCard(dict) {
           <button type="button" class="btn btn-sm btn-danger" data-action="dict-delete" data-dict-id="${esc(dict.id)}">eliminar</button>
         </div>
       </div>
-      <div class="dict-tables-grid">
-        ${(dict.tables || []).map((t, idx) => `
-          <button type="button" class="dict-table-chip"
-            data-action="dict-view-table" data-dict-id="${esc(dict.id)}" data-table-idx="${idx}"
-            title="${esc(t.entityName || t.sheetName)}">
-            <span class="dict-table-id">${esc(t.tableId || t.sheetName)}</span>
-            <span class="dict-table-name">${esc(t.entityName || '—')}</span>
-            <span class="dict-table-cols">${t.columns.length} col</span>
-          </button>
-        `).join('')}
+      <div class="dict-stats">
+        <div class="dict-stat">
+          <span class="dict-stat-num">${tableCount}</span>
+          <span class="dict-stat-label">${tableCount === 1 ? 'tabla' : 'tablas'}</span>
+        </div>
+        <div class="dict-stat">
+          <span class="dict-stat-num">${totalCols}</span>
+          <span class="dict-stat-label">${totalCols === 1 ? 'columna' : 'columnas'}</span>
+        </div>
+        <div class="dict-stat">
+          <span class="dict-stat-num">${totalIdx}</span>
+          <span class="dict-stat-label">${totalIdx === 1 ? 'índice' : 'índices'}</span>
+        </div>
+        <div class="dict-stat">
+          <span class="dict-stat-num">${subList.length}</span>
+          <span class="dict-stat-label">${subList.length === 1 ? 'subsistema' : 'subsistemas'}</span>
+        </div>
+      </div>
+      ${subList.length > 0 ? `
+        <div class="dict-subsystems">
+          ${subList.slice(0, 6).map(s => `<span class="dict-sub-chip">${esc(s)}</span>`).join('')}
+          ${subList.length > 6 ? `<span class="dict-sub-more">+${subList.length - 6}</span>` : ''}
+        </div>
+      ` : ''}
+      <div class="dict-card-hint">Empieza a escribir arriba para buscar tablas o columnas dentro de este diccionario.</div>
+    </div>
+  `;
+}
+
+function renderResultGroup(group) {
+  return `
+    <div class="dict-result-group">
+      <div class="dict-result-group-head">
+        <span class="dict-result-group-name">${esc(group.dictName)}</span>
+        <span class="dict-result-group-count">${group.results.length} ${group.results.length === 1 ? 'tabla' : 'tablas'}</span>
+      </div>
+      <div class="dict-result-group-body">
+        ${group.results.map(r => renderSearchResult(r, group.dictId)).join('')}
       </div>
     </div>
   `;
 }
 
-function renderSearchResult(r) {
+function renderSearchResult(r, dictId) {
   const t = r.table;
   return `
     <div class="dict-result-card">
       <div class="dict-result-head">
         <button type="button" class="dict-result-title-btn"
-          data-action="dict-view-table" data-dict-id="${esc(r.dictId)}" data-table-idx="${r.tableIdx}">
+          data-action="dict-view-table" data-dict-id="${esc(dictId)}" data-table-idx="${r.tableIdx}">
           <span class="dict-result-id">${esc(t.tableId || t.sheetName)}</span>
           <span class="dict-result-name">${esc(t.entityName || '—')}</span>
         </button>
-        <span class="dict-result-dict">${esc(r.dictName)}</span>
       </div>
       <div class="dict-result-matches">
         ${r.matches.map(m => `
@@ -180,11 +223,49 @@ function renderSearchResult(r) {
 }
 
 // ─── Ficha completa de la tabla (modal) ───
-export function viewTable(dictId, tableIdx) {
+
+/**
+ * Devuelve HTML con el término resaltado dentro del texto (case-insensitive,
+ * insensible a acentos). El texto se escapa primero. Si no hay term, escapa y ya.
+ */
+function highlightText(text, term) {
+  if (!term || !text) return esc(text);
+  const normText = normalize(text);
+  const normTerm = normalize(term);
+  if (!normTerm || !normText.includes(normTerm)) return esc(text);
+
+  // Como normalize cambia el largo (quita acentos), buscamos las posiciones de
+  // los matches sobre el texto original con una regex tolerante a acentos.
+  // Construimos un patrón que reemplaza cada char del term por una clase
+  // que incluye sus variantes acentuadas más comunes.
+  const accentMap = {
+    a: '[aáàäâã]', e: '[eéèëê]', i: '[iíìïî]', o: '[oóòöôõ]', u: '[uúùüû]',
+    n: '[nñ]', c: '[cç]',
+  };
+  let pattern = '';
+  for (const ch of normTerm) {
+    if (accentMap[ch]) pattern += accentMap[ch];
+    else pattern += ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+  try {
+    const re = new RegExp(pattern, 'gi');
+    // Escapamos primero, luego aplicamos la regex sobre el texto ya escapado.
+    // Como el texto escapado puede tener entidades HTML, hacemos el match
+    // sobre el original y reconstruimos.
+    const escaped = esc(text);
+    return escaped.replace(re, m => `<mark class="dict-hl">${m}</mark>`);
+  } catch {
+    return esc(text);
+  }
+}
+
+export function viewTable(dictId, tableIdx, highlightTerm = '') {
   const dict = state.dictionaries.find(d => d.id === dictId);
   if (!dict) return;
   const table = dict.tables[tableIdx];
   if (!table) return;
+  const hl = highlightTerm;
+  const h = (txt) => highlightText(txt, hl);
 
   const metaRows = [
     ['Table ID', table.tableId],
@@ -196,13 +277,20 @@ export function viewTable(dictId, tableIdx) {
     ['Diccionario', dict.name],
   ].filter(([_, v]) => v);
 
+  // Para detectar si una fila tiene match y poder destacarla
+  const rowHasMatch = (c) => hl && (
+    normalize(c.columnName).includes(normalize(hl)) ||
+    normalize(c.attributeName).includes(normalize(hl)) ||
+    normalize(c.description).includes(normalize(hl))
+  );
+
   const content = `
     <div class="table-view">
       <div class="table-meta-grid">
         ${metaRows.map(([k, v]) => `
           <div class="table-meta-row">
             <span class="table-meta-key">${esc(k)}</span>
-            <span class="table-meta-val">${esc(v)}</span>
+            <span class="table-meta-val">${h(v)}</span>
           </div>
         `).join('')}
       </div>
@@ -225,16 +313,16 @@ export function viewTable(dictId, tableIdx) {
           </thead>
           <tbody>
             ${table.columns.map(c => `
-              <tr>
+              <tr${rowHasMatch(c) ? ' class="dict-row-match"' : ''}>
                 <td class="num">${esc(c.no)}</td>
-                <td>${esc(c.attributeName)}</td>
-                <td class="mono">${esc(c.columnName)}</td>
+                <td>${h(c.attributeName)}</td>
+                <td class="mono">${h(c.columnName)}</td>
                 <td class="mono">${esc(c.dataType)}</td>
                 <td class="center">${esc(c.nullable)}</td>
                 <td class="center">${c.pk ? `<span class="badge badge-pk">${esc(c.pk)}</span>` : ''}</td>
                 <td class="center">${c.fk ? `<span class="badge badge-fk">${esc(c.fk)}</span>` : ''}</td>
                 <td>${esc(c.default)}</td>
-                <td>${esc(c.description)}</td>
+                <td>${h(c.description)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -259,8 +347,8 @@ export function viewTable(dictId, tableIdx) {
               ${table.indexes.map(ix => `
                 <tr>
                   <td class="num">${esc(ix.no)}</td>
-                  <td class="mono">${esc(ix.name)}</td>
-                  <td class="mono">${esc(ix.columns)}</td>
+                  <td class="mono">${h(ix.name)}</td>
+                  <td class="mono">${h(ix.columns)}</td>
                   <td class="center">${esc(ix.unique)}</td>
                   <td class="center">${esc(ix.partition)}</td>
                   <td class="center">${esc(ix.local)}</td>
