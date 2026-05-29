@@ -357,6 +357,26 @@ export async function saveToDrive() {
   }
 }
 
+/**
+ * Sync manual disparado por el usuario. Cancela el debounce y muestra
+ * feedback inmediato (toast).
+ */
+export async function syncNow() {
+  if (!drive.token || drive.status === 'disconnected') {
+    showToast('No estás conectado a Drive', 'warn');
+    return;
+  }
+  clearTimeout(drive.syncTimer);
+  showToast('Sincronizando con Drive…');
+  await saveToDrive();
+  if (drive.status === 'connected') {
+    const total = state.queries.length + state.dictionaries.reduce((s,d)=>s+(d.tables?.length||0),0);
+    showToast(`✓ Sincronizado (${total} elementos)`);
+  } else if (drive.status === 'error') {
+    showToast(`Error: ${drive.errorDetail}`, 'error');
+  }
+}
+
 export function scheduleDriveSync() {
   clearTimeout(drive.syncTimer);
   drive.syncTimer = setTimeout(() => saveToDrive(), DRIVE_SYNC_DEBOUNCE_MS);

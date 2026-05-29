@@ -2,7 +2,7 @@
 
 import { state } from '../state.js';
 import { esc } from '../utils.js';
-import { getDriveStatusInfo, connectDrive, onDriveStatusChange } from '../drive.js';
+import { getDriveStatusInfo, connectDrive, onDriveStatusChange, syncNow } from '../drive.js';
 import {
   renderQueryList, renderSortBar, handleSearch,
   setSort, copyQuerySQL, deleteQuery, openCreateModal, viewQuery,
@@ -66,6 +66,8 @@ export function render() {
           data-action="connect-drive" title="${esc(drv.title)}" aria-label="${esc(drv.label)}">
           <span class="drive-dot" aria-hidden="true"></span>${esc(drv.label)}
         </button>
+        <button type="button" class="btn btn-sm" data-action="sync-now"
+          title="Forzar sincronización con Drive ahora" aria-label="Sincronizar ahora">↻ sync</button>
         <button type="button" class="btn btn-primary" data-action="new">+ nueva</button>
         <button type="button" class="btn" data-action="import">importar</button>
         <button type="button" class="btn" data-action="batch">lote</button>
@@ -130,6 +132,7 @@ function setupGlobalListeners() {
 
     switch (action) {
       case 'connect-drive': connectDrive(); break;
+      case 'sync-now': syncNow(); break;
       case 'new': openCreateModal(null, render); break;
       case 'import': openImportModal(render); break;
       case 'batch': openBatchModal(render); break;
