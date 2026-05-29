@@ -83,6 +83,7 @@ export function renderDictionariesPanel() {
         <input id="dict-import-file" type="file" accept=".xlsx,.xlsm,.xls"
           data-action="dict-import" style="display:none">
       </label>
+      <button type="button" class="btn" data-action="dict-new-empty">+ vacío</button>
     </div>
     <div id="dict-body">${renderDictionariesBody()}</div>
   `;
@@ -103,7 +104,10 @@ function renderDictionariesBody() {
       <div class="empty-state">
         <div class="empty-state-icon">◫</div>
         <p>No hay diccionarios importados.</p>
-        <p class="empty-state-hint">Importa un archivo Excel donde cada hoja describa una tabla.</p>
+        <p class="empty-state-hint">Importa un archivo Excel donde cada hoja describa una tabla, o crea uno vacío.</p>
+        <div style="margin-top:14px">
+          <button type="button" class="btn btn-primary" data-action="dict-new-empty">+ diccionario vacío</button>
+        </div>
       </div>
     `;
   }
@@ -161,6 +165,7 @@ function renderDictCard(dict) {
           </div>
         </div>
         <div class="dict-card-actions">
+          <button type="button" class="btn btn-sm" data-action="dict-add-table" data-dict-id="${esc(dict.id)}">+ tabla</button>
           <button type="button" class="btn btn-sm" data-action="dict-rename" data-dict-id="${esc(dict.id)}">renombrar</button>
           <button type="button" class="btn btn-sm btn-danger" data-action="dict-delete" data-dict-id="${esc(dict.id)}">eliminar</button>
         </div>
@@ -300,6 +305,13 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
 
   const content = `
     <div class="table-view">
+      <div class="table-view-actions">
+        <button type="button" class="btn btn-sm" data-action="dict-edit-table"
+          data-dict-id="${esc(dictId)}" data-table-idx="${tableIdx}">editar</button>
+        <button type="button" class="btn btn-sm btn-danger" data-action="dict-delete-table"
+          data-dict-id="${esc(dictId)}" data-table-idx="${tableIdx}">eliminar tabla</button>
+        ${table.manual ? '<span class="dict-table-manual-badge">manual</span>' : ''}
+      </div>
       <div class="table-meta-grid">
         ${metaRows.map(([k, v]) => `
           <div class="table-meta-row">
@@ -449,4 +461,307 @@ export function handleDictSearch(input /*, rerender */) {
     }, SEARCH_DEBOUNCE_MS);
   }
   dictSearchDebounced(input.value);
+}
+
+// ─── Crear / editar tabla manualmente ───
+
+const EMPTY_COL = () => ({
+  no: '', attributeName: '', columnName: '', dataType: '',
+  nullable: '', pk: '', fk: '', default: '', description: '',
+});
+const EMPTY_IDX = () => ({
+  no: '', name: '', columns: '', unique: '', partition: '', local: '',
+});
+
+// State temporal del editor (vive solo mientras el modal está abierto)
+let _editor = null;
+
+function renderEditorRowsCols() {
+  if (!_editor) return '';
+  return _editor.columns.map((c, i) => `
+    <tr data-row="${i}">
+      <td class="num"><input type="text" data-col="no" value="${esc(c.no)}" maxlength="4"></td>
+      <td><input type="text" data-col="attributeName" value="${esc(c.attributeName)}"></td>
+      <td><input type="text" data-col="columnName" value="${esc(c.columnName)}" class="mono"></td>
+      <td><input type="text" data-col="dataType" value="${esc(c.dataType)}" class="mono" placeholder="VARCHAR2(20)"></td>
+      <td><input type="text" data-col="nullable" value="${esc(c.nullable)}" maxlength="3" class="center" placeholder="NN"></td>
+      <td><input type="text" data-col="pk" value="${esc(c.pk)}" maxlength="4" class="center" placeholder="PK1"></td>
+      <td><input type="text" data-col="fk" value="${esc(c.fk)}" maxlength="4" class="center" placeholder="FK"></td>
+      <td><input type="text" data-col="default" value="${esc(c.default)}"></td>
+      <td><input type="text" data-col="description" value="${esc(c.description)}"></td>
+      <td class="center">
+        <button type="button" class="btn btn-sm btn-danger" data-editor-action="del-col" data-row="${i}" title="Eliminar fila">×</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function renderEditorRowsIdx() {
+  if (!_editor) return '';
+  return _editor.indexes.map((ix, i) => `
+    <tr data-row="${i}">
+      <td class="num"><input type="text" data-col="no" value="${esc(ix.no)}" maxlength="4"></td>
+      <td><input type="text" data-col="name" value="${esc(ix.name)}" class="mono"></td>
+      <td><input type="text" data-col="columns" value="${esc(ix.columns)}" class="mono" placeholder="COL1 + COL2"></td>
+      <td><input type="text" data-col="unique" value="${esc(ix.unique)}" maxlength="2" class="center"></td>
+      <td><input type="text" data-col="partition" value="${esc(ix.partition)}" maxlength="4" class="center"></td>
+      <td><input type="text" data-col="local" value="${esc(ix.local)}" maxlength="4" class="center"></td>
+      <td class="center">
+        <button type="button" class="btn btn-sm btn-danger" data-editor-action="del-idx" data-row="${i}" title="Eliminar fila">×</button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function editorContent() {
+  const m = _editor.meta;
+  return `
+    <div class="table-editor">
+      <div class="form-grid">
+        <label><span class="label">Table ID</span>
+          <input type="text" id="ed-tableId" value="${esc(m.tableId)}" placeholder="TBAED141"></label>
+        <label><span class="label">Entity Name</span>
+          <input type="text" id="ed-entityName" value="${esc(m.entityName)}" placeholder="AE_DetailCommonCode"></label>
+        <label><span class="label">Sub System</span>
+          <input type="text" id="ed-subSystem" value="${esc(m.subSystem)}" placeholder="[FCZ]Administration System"></label>
+        <label><span class="label">Storage Period</span>
+          <input type="text" id="ed-storagePeriod" value="${esc(m.storagePeriod)}"></label>
+        <label><span class="label">Incr Volume</span>
+          <input type="text" id="ed-incrVolume" value="${esc(m.incrVolume)}"></label>
+        <label><span class="label">Sheet (opcional)</span>
+          <input type="text" id="ed-sheetName" value="${esc(m.sheetName)}" placeholder="hoja origen"></label>
+      </div>
+
+      <h3 class="table-section-title">Columnas
+        <span class="table-section-count" id="ed-cols-count">${_editor.columns.length}</span>
+        <button type="button" class="btn btn-sm" data-editor-action="add-col" style="margin-left:auto">+ columna</button>
+      </h3>
+      <div class="table-cols-wrap">
+        <table class="table-cols editor-table">
+          <thead>
+            <tr>
+              <th style="width:50px">#</th>
+              <th>Attribute</th>
+              <th>Column</th>
+              <th>Tipo</th>
+              <th>Null</th>
+              <th>PK</th>
+              <th>FK</th>
+              <th>Default</th>
+              <th>Descripción</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="ed-cols-body">${renderEditorRowsCols()}</tbody>
+        </table>
+      </div>
+
+      <h3 class="table-section-title">Índices
+        <span class="table-section-count" id="ed-idx-count">${_editor.indexes.length}</span>
+        <button type="button" class="btn btn-sm" data-editor-action="add-idx" style="margin-left:auto">+ índice</button>
+      </h3>
+      <div class="table-cols-wrap">
+        <table class="table-cols editor-table">
+          <thead>
+            <tr>
+              <th style="width:50px">#</th>
+              <th>Nombre</th>
+              <th>Columnas</th>
+              <th>Único</th>
+              <th>Partition</th>
+              <th>Local</th>
+              <th style="width:40px"></th>
+            </tr>
+          </thead>
+          <tbody id="ed-idx-body">${renderEditorRowsIdx()}</tbody>
+        </table>
+      </div>
+
+      <div class="editor-actions">
+        <button type="button" class="btn" data-editor-action="cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" data-editor-action="save">Guardar tabla</button>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Abre el editor — modo crear (tableIdx=null) o editar (tableIdx=number).
+ */
+export function openTableEditor(dictId, tableIdx, rerender) {
+  const dict = state.dictionaries.find(d => d.id === dictId);
+  if (!dict) return;
+  const isNew = tableIdx === null || tableIdx === undefined;
+  const src = isNew ? null : dict.tables[tableIdx];
+
+  _editor = {
+    dictId,
+    tableIdx: isNew ? null : tableIdx,
+    rerender,
+    meta: {
+      tableId:        src ? src.tableId : '',
+      entityName:     src ? src.entityName : '',
+      subSystem:      src ? src.subSystem : '',
+      storagePeriod:  src ? src.storagePeriod : '',
+      incrVolume:     src ? src.incrVolume : '',
+      sheetName:      src ? src.sheetName : '',
+    },
+    columns: src ? src.columns.map(c => ({ ...c })) : [EMPTY_COL()],
+    indexes: src ? (src.indexes || []).map(i => ({ ...i })) : [],
+  };
+
+  const title = isNew ? `Nueva tabla en ${dict.name}` : `Editar ${src.tableId || src.sheetName}`;
+  openModal(title, editorContent(), 1200);
+  setupEditorListeners();
+}
+
+function setupEditorListeners() {
+  const overlay = document.getElementById('modal-overlay');
+  if (!overlay) return;
+
+  // Cambios en inputs de filas (cols / idx)
+  overlay.addEventListener('input', e => {
+    const tr = e.target.closest('tr[data-row]');
+    if (!tr || !_editor) return;
+    const tbody = tr.parentElement;
+    const colKey = e.target.dataset.col;
+    if (!colKey) return;
+    const rowIdx = parseInt(tr.dataset.row, 10);
+    if (tbody.id === 'ed-cols-body') {
+      _editor.columns[rowIdx][colKey] = e.target.value;
+    } else if (tbody.id === 'ed-idx-body') {
+      _editor.indexes[rowIdx][colKey] = e.target.value;
+    }
+  });
+
+  // Botones del editor
+  overlay.addEventListener('click', e => {
+    const btn = e.target.closest('[data-editor-action]');
+    if (!btn || !_editor) return;
+    const action = btn.dataset.editorAction;
+    if (action === 'add-col') {
+      const next = String(_editor.columns.length + 1);
+      _editor.columns.push({ ...EMPTY_COL(), no: next });
+      document.getElementById('ed-cols-body').innerHTML = renderEditorRowsCols();
+      document.getElementById('ed-cols-count').textContent = _editor.columns.length;
+    } else if (action === 'del-col') {
+      const i = parseInt(btn.dataset.row, 10);
+      _editor.columns.splice(i, 1);
+      document.getElementById('ed-cols-body').innerHTML = renderEditorRowsCols();
+      document.getElementById('ed-cols-count').textContent = _editor.columns.length;
+    } else if (action === 'add-idx') {
+      const next = String(_editor.indexes.length + 1);
+      _editor.indexes.push({ ...EMPTY_IDX(), no: next });
+      document.getElementById('ed-idx-body').innerHTML = renderEditorRowsIdx();
+      document.getElementById('ed-idx-count').textContent = _editor.indexes.length;
+    } else if (action === 'del-idx') {
+      const i = parseInt(btn.dataset.row, 10);
+      _editor.indexes.splice(i, 1);
+      document.getElementById('ed-idx-body').innerHTML = renderEditorRowsIdx();
+      document.getElementById('ed-idx-count').textContent = _editor.indexes.length;
+    } else if (action === 'cancel') {
+      _editor = null;
+      closeModal();
+    } else if (action === 'save') {
+      saveEditor();
+    }
+  });
+}
+
+function saveEditor() {
+  if (!_editor) return;
+  const dict = state.dictionaries.find(d => d.id === _editor.dictId);
+  if (!dict) return;
+
+  // Leer metadata del DOM (los inputs de cols/idx ya están en _editor)
+  const get = id => (document.getElementById(id)?.value || '').trim();
+  const meta = {
+    tableId:        get('ed-tableId'),
+    entityName:     get('ed-entityName'),
+    subSystem:      get('ed-subSystem'),
+    storagePeriod:  get('ed-storagePeriod'),
+    incrVolume:     get('ed-incrVolume'),
+    sheetName:      get('ed-sheetName') || get('ed-tableId') || 'Tabla manual',
+  };
+
+  // Limpiar filas vacías
+  const cleanCols = _editor.columns.filter(c => (c.columnName || c.attributeName || '').trim() !== '');
+  const cleanIdx  = _editor.indexes.filter(i => (i.name || i.columns || '').trim() !== '');
+
+  if (!meta.tableId && !meta.entityName) {
+    showToast('Necesitas al menos Table ID o Entity Name', 'error');
+    return;
+  }
+  if (cleanCols.length === 0) {
+    showToast('Necesitas al menos una columna con nombre', 'error');
+    return;
+  }
+
+  const newTable = {
+    sheetName: meta.sheetName,
+    tableId: meta.tableId,
+    entityName: meta.entityName,
+    subSystem: meta.subSystem,
+    storagePeriod: meta.storagePeriod,
+    incrVolume: meta.incrVolume,
+    columns: cleanCols,
+    indexes: cleanIdx,
+    manual: true,
+  };
+
+  if (_editor.tableIdx === null) {
+    dict.tables.push(newTable);
+    showToast(`Tabla "${newTable.tableId || newTable.entityName}" agregada`);
+  } else {
+    dict.tables[_editor.tableIdx] = newTable;
+    showToast('Tabla actualizada');
+  }
+
+  saveState();
+  const rerender = _editor.rerender;
+  _editor = null;
+  closeModal();
+  if (typeof rerender === 'function') rerender();
+}
+
+/**
+ * Elimina una tabla específica del diccionario.
+ */
+export async function deleteTable(dictId, tableIdx, rerender) {
+  const dict = state.dictionaries.find(d => d.id === dictId);
+  if (!dict) return;
+  const t = dict.tables[tableIdx];
+  if (!t) return;
+  const ok = await confirmDialog(
+    `¿Eliminar la tabla "${t.tableId || t.entityName || t.sheetName}" de ${dict.name}?`,
+    { title: 'Eliminar tabla', confirmText: 'Eliminar', danger: true }
+  );
+  if (!ok) return;
+  dict.tables.splice(tableIdx, 1);
+  saveState();
+  rerender();
+  showToast('tabla eliminada', 'warn');
+}
+
+/**
+ * Crea un diccionario "manual" vacío para empezar a agregar tablas a mano.
+ */
+export async function newEmptyDictionary(rerender) {
+  const name = await promptDialog('Nombre del diccionario:', {
+    title: 'Nuevo diccionario',
+    defaultValue: 'Diccionario manual',
+  });
+  if (!name) return;
+  const trimmed = name.trim();
+  if (!trimmed) return;
+  state.dictionaries.push({
+    id: genId('dict'),
+    name: trimmed,
+    sourceFile: '(manual)',
+    importedAt: new Date().toISOString(),
+    tables: [],
+  });
+  saveState();
+  rerender();
+  showToast('diccionario creado');
 }

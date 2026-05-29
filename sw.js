@@ -1,7 +1,7 @@
 // Service Worker — cachea la app shell para uso offline
 // Estrategia: cache-first para assets propios, network-first para Google APIs (no las cacheamos)
 
-const CACHE_VERSION = 'v2.1.4';
+const CACHE_VERSION = 'v2.2.0';
 const CACHE_NAME = `sql-lib-${CACHE_VERSION}`;
 
 // App shell: lo mínimo para que la UI cargue offline
@@ -91,7 +91,11 @@ self.addEventListener('fetch', event => {
 });
 
 async function cacheFirst(request) {
-  const cached = await caches.match(request, { ignoreSearch: true });
+  // Respetar query string al matchear cache: así ?v=2.1.4 invalida la versión 2.1.3.
+  // Para fuentes (sin cache busting propio), permitimos match con ignoreSearch.
+  const url = new URL(request.url);
+  const isFont = url.host.includes('fonts.googleapis.com') || url.host.includes('fonts.gstatic.com');
+  const cached = await caches.match(request, { ignoreSearch: isFont });
   if (cached) return cached;
   try {
     const response = await fetch(request);
@@ -101,9 +105,8 @@ async function cacheFirst(request) {
     }
     return response;
   } catch (err) {
-    // Sin red y sin cache — devuelve el shell para navegaciones
     if (request.mode === 'navigate') {
-      const fallback = await caches.match('./index.html');
+      const fallback = await caches.match('./index.html', { ignoreSearch: true });
       if (fallback) return fallback;
     }
     throw err;

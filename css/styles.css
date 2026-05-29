@@ -1191,6 +1191,61 @@ button[type="button"] {
 .table-cols tr.dict-row-match td{background:#fffbe6}
 .table-cols tr.dict-row-match:hover td{background:#fff3a3}
 
+/* Acciones en la vista detalle de tabla */
+.table-view-actions{
+  display:flex;gap:6px;align-items:center;
+  margin-bottom:10px;flex-wrap:wrap;
+}
+.dict-table-manual-badge{
+  font-family:var(--mono);font-size:10px;
+  background:var(--amber2);color:var(--amber);
+  padding:2px 8px;border-radius:10px;
+  border:1px solid #fcd34d44;
+  margin-left:auto;
+}
+
+/* Editor de tabla (modal de crear/editar) */
+.table-editor{font-family:var(--sans)}
+.table-editor .form-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  gap:10px;
+  margin-bottom:14px;
+  padding:10px 12px;
+  background:var(--bg2);
+  border-radius:8px;
+}
+.table-editor .form-grid label{display:block}
+.table-editor .form-grid .label{
+  margin-bottom:4px;
+}
+.table-editor .form-grid input{
+  padding:6px 10px;font-size:12px;
+}
+.editor-table input{
+  border:1px solid transparent;
+  background:transparent;
+  padding:4px 6px;
+  font-size:11.5px;
+  font-family:var(--sans);
+  min-width:60px;
+}
+.editor-table input:hover{border-color:var(--border)}
+.editor-table input:focus{
+  border-color:var(--accent);
+  background:var(--bg1);
+  box-shadow:0 0 0 2px rgba(59,91,219,.1);
+}
+.editor-table input.mono{font-family:var(--mono);font-size:11px}
+.editor-table input.center{text-align:center}
+.editor-table td{padding:2px 4px;vertical-align:middle}
+.editor-table tr:hover td{background:transparent}
+.editor-actions{
+  display:flex;justify-content:flex-end;gap:8px;
+  margin-top:14px;padding-top:12px;
+  border-top:1px solid var(--border);
+}
+
 @media (max-width: 720px){
   .dict-toolbar{flex-direction:column;align-items:stretch}
   .dict-search-wrap{min-width:0;width:100%}

@@ -16,6 +16,7 @@ import {
 import {
   renderDictionariesPanel, importDictionary, renameDictionary,
   deleteDictionary, viewTable, handleDictSearch,
+  openTableEditor, deleteTable, newEmptyDictionary,
 } from './dictionaries.js';
 import { openImportModal, openBatchModal } from './import.js';
 import { exportBackup, importBackup, resetAll } from './backup.js';
@@ -169,6 +170,16 @@ function setupGlobalListeners() {
       }
       case 'dict-rename': renameDictionary(target.dataset.dictId, render); break;
       case 'dict-delete': deleteDictionary(target.dataset.dictId, render); break;
+      case 'dict-add-table': openTableEditor(target.dataset.dictId, null, render); break;
+      case 'dict-edit-table': {
+        openTableEditor(target.dataset.dictId, parseInt(target.dataset.tableIdx, 10), render);
+        break;
+      }
+      case 'dict-delete-table': {
+        deleteTable(target.dataset.dictId, parseInt(target.dataset.tableIdx, 10), render);
+        break;
+      }
+      case 'dict-new-empty': newEmptyDictionary(render); break;
       // Sort bar
       default: {
         if (target.classList.contains('sort-btn') && target.dataset.sortField) {
