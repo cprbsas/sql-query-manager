@@ -1024,9 +1024,7 @@ button[type="button"] {
 }
 
 /* Grupos de resultados por diccionario */
-.dict-result-group{
-  margin-bottom:14px;
-}
+.dict-result-group{margin-bottom:14px}
 .dict-result-group-head{
   display:flex;align-items:center;gap:10px;
   padding:6px 10px;margin-bottom:6px;
@@ -1183,19 +1181,15 @@ button[type="button"] {
 .badge-pk{background:var(--accent3);color:var(--accent);border:1px solid var(--accent4)}
 .badge-fk{background:var(--amber2);color:var(--amber);border:1px solid #fcd34d44}
 
-/* Resaltado del término buscado dentro de la ficha */
+/* Resaltado del término buscado */
 .dict-hl{
   background:#fff3a3;
   color:var(--text0);
   padding:0 2px;border-radius:3px;
   font-weight:600;
 }
-.table-cols tr.dict-row-match td{
-  background:#fffbe6;
-}
-.table-cols tr.dict-row-match:hover td{
-  background:#fff3a3;
-}
+.table-cols tr.dict-row-match td{background:#fffbe6}
+.table-cols tr.dict-row-match:hover td{background:#fff3a3}
 
 @media (max-width: 720px){
   .dict-toolbar{flex-direction:column;align-items:stretch}
@@ -1203,15 +1197,4 @@ button[type="button"] {
   .dict-stats{grid-template-columns:repeat(2, 1fr)}
   .dict-card-header{flex-direction:column}
   .table-meta-grid{grid-template-columns:1fr}
-}
-
-/* Preferencia de reducir movimiento */
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
 }
