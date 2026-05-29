@@ -64,46 +64,10 @@ function searchAllDictionaries(term) {
 }
 
 // ─── Render principal ───
+// Render del shell (input + import + contenedor body). El body se actualiza
+// por separado en handleDictSearch para no recrear el input al teclear.
 export function renderDictionariesPanel() {
-  const dicts = state.dictionaries;
   const term = state.dictSearch || '';
-
-  let body = '';
-
-  if (dicts.length === 0) {
-    body = `
-      <div class="empty-state">
-        <div class="empty-state-icon">◫</div>
-        <p>No hay diccionarios importados.</p>
-        <p class="empty-state-hint">Importa un archivo Excel donde cada hoja describa una tabla.</p>
-      </div>
-    `;
-  } else if (term.trim()) {
-    const { groups, totalTables } = searchAllDictionaries(term);
-    if (totalTables === 0) {
-      body = `<div class="empty-state"><p>Sin coincidencias para "<strong>${esc(term)}</strong>".</p></div>`;
-    } else {
-      const dictsWithMatches = groups.length;
-      body = `
-        <div class="dict-results-summary">
-          ${totalTables} ${totalTables === 1 ? 'tabla coincide' : 'tablas coinciden'}
-          ${dictsWithMatches > 1 ? ` en ${dictsWithMatches} diccionarios` : ''}
-        </div>
-        <div class="dict-results">
-          ${groups.map(renderResultGroup).join('')}
-        </div>
-      `;
-    }
-  } else {
-    body = `
-      <div class="dict-list">
-        ${dicts.map(renderDictCard).join('')}
-      </div>
-    `;
-  }
-
-  const totalTables = dicts.reduce((s, d) => s + (d.tables ? d.tables.length : 0), 0);
-
   return `
     <h2 class="panel-title">// Diccionarios de bases de datos</h2>
     <div class="dict-toolbar">
@@ -120,9 +84,59 @@ export function renderDictionariesPanel() {
           data-action="dict-import" style="display:none">
       </label>
     </div>
-    <div class="dict-meta">${dicts.length} ${dicts.length === 1 ? 'diccionario' : 'diccionarios'} · ${totalTables} ${totalTables === 1 ? 'tabla' : 'tablas'}</div>
-    ${body}
+    <div id="dict-body">${renderDictionariesBody()}</div>
   `;
+}
+
+/**
+ * Render del contenido (lista o resultados) según el state actual.
+ * Se llama solo desde handleDictSearch para actualizar sin tocar el input.
+ */
+function renderDictionariesBody() {
+  const dicts = state.dictionaries;
+  const term = state.dictSearch || '';
+  const totalTables = dicts.reduce((s, d) => s + (d.tables ? d.tables.length : 0), 0);
+  const meta = `<div class="dict-meta">${dicts.length} ${dicts.length === 1 ? 'diccionario' : 'diccionarios'} · ${totalTables} ${totalTables === 1 ? 'tabla' : 'tablas'}</div>`;
+
+  if (dicts.length === 0) {
+    return meta + `
+      <div class="empty-state">
+        <div class="empty-state-icon">◫</div>
+        <p>No hay diccionarios importados.</p>
+        <p class="empty-state-hint">Importa un archivo Excel donde cada hoja describa una tabla.</p>
+      </div>
+    `;
+  }
+  if (term.trim()) {
+    const { groups, totalTables: matchedTables } = searchAllDictionaries(term);
+    if (matchedTables === 0) {
+      return meta + `<div class="empty-state"><p>Sin coincidencias para "<strong>${esc(term)}</strong>".</p></div>`;
+    }
+    const dictsWithMatches = groups.length;
+    return meta + `
+      <div class="dict-results-summary">
+        ${matchedTables} ${matchedTables === 1 ? 'tabla coincide' : 'tablas coinciden'}
+        ${dictsWithMatches > 1 ? ` en ${dictsWithMatches} diccionarios` : ''}
+      </div>
+      <div class="dict-results">
+        ${groups.map(renderResultGroup).join('')}
+      </div>
+    `;
+  }
+  return meta + `
+    <div class="dict-list">
+      ${dicts.map(renderDictCard).join('')}
+    </div>
+  `;
+}
+
+/**
+ * Actualiza solo el contenedor #dict-body. No toca el input ni el toolbar,
+ * por eso no se pierde el foco ni teclas al buscar.
+ */
+function updateDictBody() {
+  const body = document.getElementById('dict-body');
+  if (body) body.innerHTML = renderDictionariesBody();
 }
 
 function renderDictCard(dict) {
@@ -424,20 +438,14 @@ export async function deleteDictionary(dictId, rerender) {
 }
 
 // ─── Búsqueda con debounce ───
+// Actualiza el state y solo el body de resultados, sin re-renderizar el panel
+// completo. Así el input nunca se recrea y no se pierden teclas.
 let dictSearchDebounced = null;
-export function handleDictSearch(input, rerender) {
+export function handleDictSearch(input /*, rerender */) {
   if (!dictSearchDebounced) {
     dictSearchDebounced = debounce(val => {
       state.dictSearch = val;
-      rerender();
-      // Restaurar foco después del re-render
-      setTimeout(() => {
-        const el = document.getElementById('dict-search-input');
-        if (el) {
-          el.focus();
-          el.setSelectionRange(el.value.length, el.value.length);
-        }
-      }, 0);
+      updateDictBody();
     }, SEARCH_DEBOUNCE_MS);
   }
   dictSearchDebounced(input.value);
