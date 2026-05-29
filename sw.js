@@ -1,7 +1,7 @@
 // Service Worker — cachea la app shell para uso offline
 // Estrategia: cache-first para assets propios, network-first para Google APIs (no las cacheamos)
 
-const CACHE_VERSION = 'v2.0.3';
+const CACHE_VERSION = 'v2.1.0';
 const CACHE_NAME = `sql-lib-${CACHE_VERSION}`;
 
 // App shell: lo mínimo para que la UI cargue offline
@@ -17,6 +17,7 @@ const APP_SHELL = [
   './js/sql.js',
   './js/csv.js',
   './js/drive.js',
+  './js/xlsx-parser.js',
   './js/ui/render.js',
   './js/ui/modal.js',
   './js/ui/confirm.js',
@@ -24,6 +25,7 @@ const APP_SHELL = [
   './js/ui/queries.js',
   './js/ui/categories.js',
   './js/ui/databases.js',
+  './js/ui/dictionaries.js',
   './js/ui/import.js',
   './js/ui/backup.js',
 ];
@@ -67,6 +69,12 @@ self.addEventListener('fetch', event => {
     url.host.includes('gstatic.com')
   ) {
     // Pasamos directo a la red sin cachear
+    return;
+  }
+
+  // SheetJS desde jsDelivr — cache-first (es inmutable, viene con versión fija)
+  if (url.host.includes('cdn.jsdelivr.net')) {
+    event.respondWith(cacheFirst(request));
     return;
   }
 
