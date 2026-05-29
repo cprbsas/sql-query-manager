@@ -13,6 +13,10 @@ import {
 import {
   renderDatabasesPanel, addDatabase, editDatabasePrompt, deleteDatabase,
 } from './databases.js';
+import {
+  renderDictionariesPanel, importDictionary, renameDictionary,
+  deleteDictionary, viewTable, handleDictSearch,
+} from './dictionaries.js';
 import { openImportModal, openBatchModal } from './import.js';
 import { exportBackup, importBackup, resetAll } from './backup.js';
 
@@ -39,6 +43,8 @@ export function render() {
     tabContent = renderCategoriesPanel();
   } else if (state.activeTab === 'databases') {
     tabContent = renderDatabasesPanel();
+  } else if (state.activeTab === 'dictionaries') {
+    tabContent = renderDictionariesPanel();
   }
 
   const drv = getDriveStatusInfo();
@@ -51,7 +57,7 @@ export function render() {
           Biblioteca de consultas<span class="cursor" aria-hidden="true"></span>
         </div>
         <div class="header-meta">
-          ${state.queries.length} consultas · ${state.categories.length} cats · ${state.databases.length} bds
+          ${state.queries.length} consultas · ${state.categories.length} cats · ${state.databases.length} bds · ${state.dictionaries.length} dicc
         </div>
       </div>
       <div class="header-actions">
@@ -71,10 +77,10 @@ export function render() {
     </header>
     <div class="body">
       <aside class="sidebar" role="navigation" aria-label="Navegación">
-        ${['queries','categories','databases'].map(id => {
-          const labels = { queries: 'consultas', categories: 'categorías', databases: 'bases de datos' };
-          const icons = { queries: '▸', categories: '◈', databases: '◉' };
-          const count = { queries: state.queries.length, categories: state.categories.length, databases: state.databases.length };
+        ${['queries','categories','databases','dictionaries'].map(id => {
+          const labels = { queries: 'consultas', categories: 'categorías', databases: 'bases de datos', dictionaries: 'diccionarios' };
+          const icons = { queries: '▸', categories: '◈', databases: '◉', dictionaries: '◫' };
+          const count = { queries: state.queries.length, categories: state.categories.length, databases: state.databases.length, dictionaries: state.dictionaries.length };
           const active = state.activeTab === id;
           return `<button type="button" class="sidebar-btn ${active ? 'active' : ''}"
             data-action="tab" data-tab="${id}"
@@ -157,6 +163,12 @@ function setupGlobalListeners() {
       case 'add-db': addDatabase(render); break;
       case 'edit-db': editDatabasePrompt(parseInt(target.dataset.idx, 10), render); break;
       case 'delete-db': deleteDatabase(parseInt(target.dataset.idx, 10), render); break;
+      case 'dict-view-table': {
+        viewTable(target.dataset.dictId, parseInt(target.dataset.tableIdx, 10));
+        break;
+      }
+      case 'dict-rename': renameDictionary(target.dataset.dictId, render); break;
+      case 'dict-delete': deleteDictionary(target.dataset.dictId, render); break;
       // Sort bar
       default: {
         if (target.classList.contains('sort-btn') && target.dataset.sortField) {
@@ -170,6 +182,7 @@ function setupGlobalListeners() {
   document.addEventListener('input', e => {
     if (e.target.closest('.modal-overlay')) return;
     if (e.target.id === 'search-input') handleSearch(e.target);
+    else if (e.target.id === 'dict-search-input') handleDictSearch(e.target, render);
   });
 
   document.addEventListener('change', e => {
@@ -185,6 +198,8 @@ function setupGlobalListeners() {
       render();
     } else if (action === 'restore') {
       importBackup(e, render);
+    } else if (action === 'dict-import') {
+      importDictionary(e, render);
     }
   });
 

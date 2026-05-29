@@ -12,6 +12,7 @@ export function exportBackup() {
     queries: state.queries,
     categories: state.categories,
     databases: state.databases,
+    dictionaries: state.dictionaries,
     exportedAt: new Date().toISOString(),
   }, null, 2);
 
