@@ -1,6 +1,6 @@
 // Configuración global de la aplicación
 
-export const APP_VERSION = '2.1.0';
+export const APP_VERSION = '2.1.1';
 
 export const GDRIVE_CLIENT_ID = '742085025396-7s3k6evr07j9m329ljquucv7mk1qijnn.apps.googleusercontent.com';
 export const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
@@ -21,7 +21,7 @@ export const SEARCH_DEBOUNCE_MS = 180;
 export const DRIVE_SYNC_DEBOUNCE_MS = 1500;
 
 // SheetJS (xlsx parser) — se carga dinámicamente desde CDN
-export const SHEETJS_CDN = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/xlsx.full.min.js';
+export const SHEETJS_CDN = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js';
 
 // Sort
 export const SORT_OPTIONS = [
