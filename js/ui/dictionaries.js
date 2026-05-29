@@ -278,6 +278,11 @@ function highlightText(text, term) {
   }
 }
 
+// Hook que main.js / render.js puede establecer para re-renderizar el panel
+// desde dentro de listeners del modal (donde no hay acceso directo a render).
+let _viewRerender = null;
+export function setViewRerender(fn) { _viewRerender = fn; }
+
 export function viewTable(dictId, tableIdx, highlightTerm = '') {
   const dict = state.dictionaries.find(d => d.id === dictId);
   if (!dict) return;
@@ -389,6 +394,25 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
 
   const title = `${table.tableId || table.sheetName} — ${table.entityName || ''}`.trim();
   openModal(title, content, 1100);
+
+  // Listeners propios del modal (el click delegation global ignora .modal-overlay)
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay) {
+    overlay.addEventListener('click', e => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const dId = btn.dataset.dictId;
+      const tIdx = parseInt(btn.dataset.tableIdx, 10);
+      if (action === 'dict-edit-table') {
+        closeModal();
+        openTableEditor(dId, tIdx, _viewRerender || (()=>{}));
+      } else if (action === 'dict-delete-table') {
+        closeModal();
+        deleteTable(dId, tIdx, _viewRerender || (()=>{}));
+      }
+    });
+  }
 }
 
 // ─── Acciones ───

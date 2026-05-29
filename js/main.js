@@ -3,6 +3,7 @@
 import { state, loadState } from './state.js';
 import { initDriveLocal, scheduleDriveSync, flushOnUnload, setDriveRerender } from './drive.js';
 import { render } from './ui/render.js';
+import { setViewRerender } from './ui/dictionaries.js';
 
 // Hook: cuando saveState() persista, dispara sync a Drive
 state._onPersist = () => scheduleDriveSync();
@@ -11,6 +12,7 @@ state._onPersist = () => scheduleDriveSync();
 loadState();
 initDriveLocal();
 setDriveRerender(render);   // permite que drive.js refresque la UI tras cargar
+setViewRerender(render);    // permite que la ficha de tabla refresque tras editar/eliminar
 render();
 
 // Salvar cambios pendientes al cerrar

@@ -1,6 +1,6 @@
 // Configuración global de la aplicación
 
-export const APP_VERSION = '2.2.0';
+export const APP_VERSION = '2.2.1';
 
 export const GDRIVE_CLIENT_ID = '742085025396-7s3k6evr07j9m329ljquucv7mk1qijnn.apps.googleusercontent.com';
 export const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
