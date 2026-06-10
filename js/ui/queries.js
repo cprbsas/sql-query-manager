@@ -35,6 +35,11 @@ export function getSorted(queries) {
       const vb = b[f] ? new Date(b[f]).getTime() : 0;
       return (va - vb) * dir;
     }
+    if (f === 'useCount') {
+      const diff = ((a.useCount || 0) - (b.useCount || 0)) * dir;
+      // Desempate alfabético por nombre
+      return diff !== 0 ? diff : compareStrings(a.name || '', b.name || '');
+    }
     return compareStrings(a[f] || '', b[f] || '') * dir;
   });
 }
@@ -45,7 +50,7 @@ export function setSort(field) {
     state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
   } else {
     state.sortField = field;
-    state.sortDir = field === 'createdAt' ? 'desc' : 'asc';
+    state.sortDir = (field === 'createdAt' || field === 'useCount') ? 'desc' : 'asc';
   }
   refreshList();
   refreshSortBar();
@@ -95,7 +100,7 @@ export function renderQueryList() {
         <div>
           <div class="card-title">${esc(q.name)}</div>
           ${q.description ? `<div class="card-desc">${esc(q.description)}</div>` : ''}
-          ${dateStr ? `<div class="card-date">${dateStr}</div>` : ''}
+          ${dateStr || q.useCount ? `<div class="card-date">${dateStr}${q.useCount ? `${dateStr ? ' · ' : ''}↗ ${q.useCount} uso${q.useCount !== 1 ? 's' : ''}` : ''}</div>` : ''}
         </div>
         <div class="card-actions">
           <button class="btn btn-sm" type="button" data-action="copy" data-id="${esc(q.id)}" aria-label="Copiar SQL">copy</button>
@@ -149,6 +154,21 @@ function updateClearButton(input) {
 }
 
 // ─── Acciones de query ───
+
+/** Incrementa el contador de uso de una query y refresca la lista. */
+function registerUse(q, { delayRefresh = false } = {}) {
+  q.useCount = (q.useCount || 0) + 1;
+  saveState();
+  // Si se copia desde la tarjeta, esperamos a que termine el feedback ✓
+  // antes de re-renderizar (re-renderizar al instante borraría el botón).
+  if (delayRefresh) {
+    setTimeout(() => { refreshList(); refreshSortBar(); }, 1600);
+  } else {
+    refreshList();
+    refreshSortBar();
+  }
+}
+
 export function copyQuerySQL(id, btn) {
   const q = state.queries.find(x => x.id === id);
   if (!q) return;
@@ -159,6 +179,7 @@ export function copyQuerySQL(id, btn) {
       btn.style.color = 'var(--green)';
       setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
     }
+    registerUse(q, { delayRefresh: true });
   }).catch(() => showToast('No se pudo copiar', 'error'));
 }
 
@@ -371,25 +392,4 @@ export function viewQuery(id) {
     else if (action === 'copy-view') copyViewSQL(id);
     else if (action === 'edit-from-view') {
       closeModal();
-      // Reabre como editor — el rerender se pasa cuando openCreateModal reciba el contexto
-      // Lo simple: expone un evento global
-      window.dispatchEvent(new CustomEvent('sqllib:edit-query', { detail: { id } }));
-    }
-  });
-}
-
-function toggleFormat(id) {
-  const q = state.queries.find(x => x.id === id);
-  if (!q) return;
-  _viewFormatted = !_viewFormatted;
-  const sql = _viewFormatted ? formatSQL(q.sql) : q.sql;
-  document.getElementById('sql-viewer-content').innerHTML = `<code class="sql-code">${highlightSQL(sql)}</code>`;
-  document.getElementById('format-toggle-btn').textContent = _viewFormatted ? '⟲ original' : '✦ formatear';
-}
-
-function copyViewSQL(id) {
-  const q = state.queries.find(x => x.id === id);
-  if (!q) return;
-  const sql = _viewFormatted ? formatSQL(q.sql) : q.sql;
-  navigator.clipboard.writeText(sql).then(() => showToast('copiado'));
-}
+ 
