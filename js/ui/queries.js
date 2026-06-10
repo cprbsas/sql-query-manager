@@ -392,4 +392,28 @@ export function viewQuery(id) {
     else if (action === 'copy-view') copyViewSQL(id);
     else if (action === 'edit-from-view') {
       closeModal();
- 
+      // Reabre como editor — el rerender se pasa cuando openCreateModal reciba el contexto
+      // Lo simple: expone un evento global
+      window.dispatchEvent(new CustomEvent('sqllib:edit-query', { detail: { id } }));
+    }
+  });
+}
+
+function toggleFormat(id) {
+  const q = state.queries.find(x => x.id === id);
+  if (!q) return;
+  _viewFormatted = !_viewFormatted;
+  const sql = _viewFormatted ? formatSQL(q.sql) : q.sql;
+  document.getElementById('sql-viewer-content').innerHTML = `<code class="sql-code">${highlightSQL(sql)}</code>`;
+  document.getElementById('format-toggle-btn').textContent = _viewFormatted ? '⟲ original' : '✦ formatear';
+}
+
+function copyViewSQL(id) {
+  const q = state.queries.find(x => x.id === id);
+  if (!q) return;
+  const sql = _viewFormatted ? formatSQL(q.sql) : q.sql;
+  navigator.clipboard.writeText(sql).then(() => {
+    showToast('copiado');
+    registerUse(q); // la lista está detrás del modal, refresco inmediato
+  }).catch(() => showToast('No se pudo copiar', 'error'));
+}

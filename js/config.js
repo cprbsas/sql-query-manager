@@ -1,6 +1,6 @@
 // Configuración global de la aplicación
 
-export const APP_VERSION = '2.3.0';
+export const APP_VERSION = '2.3.1';
 
 export const GDRIVE_CLIENT_ID = '742085025396-7s3k6evr07j9m329ljquucv7mk1qijnn.apps.googleusercontent.com';
 export const GDRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.profile';
@@ -46,4 +46,5 @@ export const SQL_KEYWORDS = new Set([
   'MINUS','INTERSECT','EXCEPT','PIVOT','UNPIVOT','LATERAL','LAG','LEAD','FIRST_VALUE','LAST_VALUE','NTH_VALUE',
   'NTILE','PERCENT_RANK','CUME_DIST','LISTAGG','STRING_AGG','GROUP_CONCAT','BOOLEAN','INT','INTEGER','BIGINT',
   'SMALLINT','FLOAT','DOUBLE','DECIMAL','NUMERIC','VARCHAR','CHAR','TEXT','BLOB','CLOB','TIMESTAMP','DATETIME',
-  'NUMBER','VARCHAR2','NVARCHAR','NCHAR','TRUE','FALSE','TEMPORARY','
+  'NUMBER','VARCHAR2','NVARCHAR','NCHAR','TRUE','FALSE','TEMPORARY','TEMP','MATERIALIZED','EXPLAIN','ANALYZE',
+]);
