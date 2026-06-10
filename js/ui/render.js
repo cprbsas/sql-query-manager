@@ -183,12 +183,7 @@ function setupGlobalListeners() {
         break;
       }
       case 'dict-new-empty': newEmptyDictionary(render); break;
-      // Sort bar
-      default: {
-        if (target.classList.contains('sort-btn') && target.dataset.sortField) {
-          setSort(target.dataset.sortField);
-        }
-      }
+      case 'sort': setSort(target.dataset.sortField); break;
     }
   });
 

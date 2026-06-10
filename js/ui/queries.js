@@ -62,7 +62,7 @@ export function renderSortBar() {
   const buttons = SORT_OPTIONS.map(o => {
     const active = state.sortField === o.field;
     return `<button class="sort-btn ${active ? 'active' : ''}" type="button"
-      data-sort-field="${o.field}"
+      data-action="sort" data-sort-field="${o.field}"
       aria-pressed="${active}">${o.label}${active ? ` <span class="sort-dir">${di}</span>` : ''}</button>`;
   }).join('');
   return `${buttons}<span class="result-count">${count} resultado${count !== 1 ? 's' : ''}</span>`;
