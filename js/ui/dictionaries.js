@@ -311,6 +311,8 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
   const content = `
     <div class="table-view">
       <div class="table-view-actions">
+        <button type="button" class="btn btn-sm" data-action="dict-copy-select"
+          data-dict-id="${esc(dictId)}" data-table-idx="${tableIdx}">copiar SELECT</button>
         <button type="button" class="btn btn-sm" data-action="dict-edit-table"
           data-dict-id="${esc(dictId)}" data-table-idx="${tableIdx}">editar</button>
         <button type="button" class="btn btn-sm btn-danger" data-action="dict-delete-table"
@@ -410,9 +412,37 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
       } else if (action === 'dict-delete-table') {
         closeModal();
         deleteTable(dId, tIdx, _viewRerender || (()=>{}));
+      } else if (action === 'dict-copy-select') {
+        copySelectStar(dId, tIdx, btn);
       }
     });
   }
+}
+
+/**
+ * Copia al portapapeles un "SELECT * FROM tabla;" usando el nombre de la
+ * tabla (entity name si existe, si no el table ID, si no la hoja).
+ */
+function copySelectStar(dictId, tableIdx, btn) {
+  const dict = state.dictionaries.find(d => d.id === dictId);
+  const table = dict && dict.tables[tableIdx];
+  if (!table) return;
+  const tableName = table.entityName || table.tableId || table.sheetName || '';
+  if (!tableName) {
+    showToast('Esta tabla no tiene nombre para generar el SELECT', 'error');
+    return;
+  }
+  const sql = `SELECT * FROM ${tableName};`;
+  navigator.clipboard.writeText(sql).then(() => {
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = '✓ copiado';
+      btn.style.color = 'var(--green)';
+      setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1500);
+    } else {
+      showToast('SQL copiado');
+    }
+  }).catch(() => showToast('No se pudo copiar', 'error'));
 }
 
 // ─── Acciones ───
