@@ -313,6 +313,8 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
       <div class="table-view-actions">
         <button type="button" class="btn btn-sm" data-action="dict-copy-select"
           data-dict-id="${esc(dictId)}" data-table-idx="${tableIdx}">copiar SELECT</button>
+        <button type="button" class="btn btn-sm" data-action="dict-download-table"
+          data-dict-id="${esc(dictId)}" data-table-idx="${tableIdx}">descargar</button>
         <button type="button" class="btn btn-sm" data-action="dict-edit-table"
           data-dict-id="${esc(dictId)}" data-table-idx="${tableIdx}">editar</button>
         <button type="button" class="btn btn-sm btn-danger" data-action="dict-delete-table"
@@ -414,6 +416,8 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
         deleteTable(dId, tIdx, _viewRerender || (()=>{}));
       } else if (action === 'dict-copy-select') {
         copySelectStar(dId, tIdx, btn);
+      } else if (action === 'dict-download-table') {
+        downloadTableDict(dId, tIdx);
       }
     });
   }
@@ -443,6 +447,68 @@ function copySelectStar(dictId, tableIdx, btn) {
       showToast('SQL copiado');
     }
   }).catch(() => showToast('No se pudo copiar', 'error'));
+}
+
+/**
+ * Genera y descarga el diccionario individual de una tabla en formato Markdown,
+ * con sus metadatos, columnas e índices.
+ */
+function downloadTableDict(dictId, tableIdx) {
+  const dict = state.dictionaries.find(d => d.id === dictId);
+  const table = dict && dict.tables[tableIdx];
+  if (!table) return;
+
+  const tableName = table.tableId || table.sheetName || table.entityName || 'tabla';
+
+  const metaRows = [
+    ['Table ID', table.tableId],
+    ['Entity Name', table.entityName],
+    ['Sheet', table.sheetName],
+    ['Sub System', table.subSystem],
+    ['Storage Period', table.storagePeriod],
+    ['Incr Volume', table.incrVolume],
+    ['Diccionario', dict.name],
+  ].filter(([_, v]) => v);
+
+  const lines = [];
+  lines.push(`# ${table.tableId || table.sheetName}${table.entityName ? ` — ${table.entityName}` : ''}`);
+  lines.push('');
+  metaRows.forEach(([k, v]) => lines.push(`- **${k}:** ${v}`));
+  lines.push('');
+
+  lines.push(`## Columnas (${table.columns.length})`);
+  lines.push('');
+  lines.push('| # | Attribute | Column | Tipo | Null | PK | FK | Default | Descripción |');
+  lines.push('|---|---|---|---|---|---|---|---|---|');
+  table.columns.forEach(c => {
+    lines.push(`| ${c.no ?? ''} | ${c.attributeName ?? ''} | ${c.columnName ?? ''} | ${c.dataType ?? ''} | ${c.nullable ?? ''} | ${c.pk ?? ''} | ${c.fk ?? ''} | ${c.default ?? ''} | ${(c.description ?? '').toString().replace(/\|/g, '\\|')} |`);
+  });
+
+  if (table.indexes && table.indexes.length > 0) {
+    lines.push('');
+    lines.push(`## Índices (${table.indexes.length})`);
+    lines.push('');
+    lines.push('| # | Nombre | Columnas | Único | Partition | Local |');
+    lines.push('|---|---|---|---|---|---|');
+    table.indexes.forEach(ix => {
+      lines.push(`| ${ix.no ?? ''} | ${ix.name ?? ''} | ${ix.columns ?? ''} | ${ix.unique ?? ''} | ${ix.partition ?? ''} | ${ix.local ?? ''} |`);
+    });
+  }
+
+  lines.push('');
+  lines.push(`SELECT * FROM ${tableName};`);
+
+  const md = lines.join('\n');
+
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+  const now = new Date();
+  const dt = now.toISOString().slice(0, 10);
+  const safeName = tableName.replace(/[^a-zA-Z0-9_.-]+/g, '_');
+  a.download = `dict_${safeName}_${dt}.md`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  showToast('diccionario de tabla descargado');
 }
 
 // ─── Acciones ───
