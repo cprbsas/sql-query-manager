@@ -420,14 +420,14 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
 }
 
 /**
- * Copia al portapapeles un "SELECT * FROM tabla;" usando el nombre de la
- * tabla (entity name si existe, si no el table ID, si no la hoja).
+ * Copia al portapapeles un "SELECT * FROM tabla;" usando el nombre real de
+ * la tabla (table ID si existe, si no la hoja, si no el entity name).
  */
 function copySelectStar(dictId, tableIdx, btn) {
   const dict = state.dictionaries.find(d => d.id === dictId);
   const table = dict && dict.tables[tableIdx];
   if (!table) return;
-  const tableName = table.entityName || table.tableId || table.sheetName || '';
+  const tableName = table.tableId || table.sheetName || table.entityName || '';
   if (!tableName) {
     showToast('Esta tabla no tiene nombre para generar el SELECT', 'error');
     return;
