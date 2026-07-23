@@ -408,9 +408,12 @@ export function flushOnUnload() {
         }),
         keepalive: true,
       }
-    );
+    ).catch(err => {
+      // La conexión suele cortarse al cerrar/cambiar de pestaña; no hay
+      // forma de reintentar ni de avisar al usuario en ese momento.
+      console.warn('flushOnUnload falló:', err);
+    });
   } catch (err) {
-    // Sin chance de reportar al usuario, ya se está cerrando
     console.warn('flushOnUnload falló:', err);
   }
 }
