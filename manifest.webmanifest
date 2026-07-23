@@ -11,13 +11,13 @@
   "lang": "es",
   "icons": [
     {
-      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%233b5bdb' rx='32'/><text x='96' y='130' text-anchor='middle' font-size='100' font-family='monospace' font-weight='600' fill='white'>SQL</text></svg>",
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' fill='%233b5bdb' rx='32'/><g fill='none' stroke='white' stroke-width='11' stroke-linecap='round'><ellipse cx='96' cy='58' rx='46' ry='19'/><path d='M50 58v76c0 10.5 20.6 19 46 19s46-8.5 46-19V58'/><path d='M50 96c0 10.5 20.6 19 46 19s46-8.5 46-19'/></g></svg>",
       "sizes": "192x192",
       "type": "image/svg+xml",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%233b5bdb' rx='80'/><text x='256' y='340' text-anchor='middle' font-size='260' font-family='monospace' font-weight='600' fill='white'>SQL</text></svg>",
+      "src": "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%233b5bdb' rx='80'/><g fill='none' stroke='white' stroke-width='28' stroke-linecap='round'><ellipse cx='256' cy='170' rx='118' ry='48'/><path d='M138 170v172c0 26.5 52.8 48 118 48s118-21.5 118-48V170'/><path d='M138 256c0 26.5 52.8 48 118 48s118-21.5 118-48'/></g></svg>",
       "sizes": "512x512",
       "type": "image/svg+xml",
       "purpose": "any maskable"
