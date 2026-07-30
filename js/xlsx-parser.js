@@ -262,8 +262,166 @@ function parseSheet(aoa, sheetName) {
   };
 }
 
+// ─── Formato "Export" (orientado a filas por SECCION) ───
+//
+// Formato alternativo, con una única cabecera arriba y una fila por elemento.
+// La columna SECCION distingue el tipo de fila:
+//   ORDEN | SECCION | NOMBRE | POSICION | TIPO | LONGITUD | NULLABLE | TIENE_DEFAULT | DESCRIPCION
+//   1 | TABLE           | TBABD170      |   |          |    |   |    | AB_WebRecharge
+//   2 | COLUMN          | WEB_RELOAD_ID | 1 | VARCHAR2 | 36 | N | N  | WEB RELOAD ID
+//   3 | PRIMARY KEY     | TBABD170_PK   | 1 | WEB_RELOAD_ID |  |   |    |
+//   4 | INDEX NONUNIQUE | TBABD170_IX_01|   |          |    |   | NO | UPDAT_DATE + SYNC_STAT_CD
+//
+// Una misma hoja puede contener varias tablas (cada fila TABLE inicia una nueva).
+// Se admiten cabeceras en español o inglés.
+
+// Cabeceras conocidas -> clave interna. Se normaliza para comparar.
+const EXPORT_HEADER_ALIASES = {
+  'orden': 'orden',           'order': 'orden',
+  'seccion': 'seccion',       'sección': 'seccion',      'section': 'seccion',
+  'nombre': 'nombre',         'name': 'nombre',
+  'posicion': 'posicion',     'posición': 'posicion',    'position': 'posicion',
+  'tipo': 'tipo',             'type': 'tipo',            'datatype': 'tipo',
+  'longitud': 'longitud',     'length': 'longitud',      'size': 'longitud',
+  'nullable': 'nullable',     'nulo': 'nullable',        'nulable': 'nullable',
+  'tiene_default': 'default',  'tiene default': 'default','has_default': 'default',
+  'default': 'default',
+  'descripcion': 'descripcion','descripción': 'descripcion','description': 'descripcion',
+};
+
+/**
+ * Construye un mapa {claveInterna: indiceColumna} si la fila es una cabecera
+ * del formato Export. Devuelve null si no lo es.
+ * Requisito mínimo: contener SECCION y NOMBRE.
+ */
+function exportHeaderMap(row) {
+  if (!row) return null;
+  const map = {};
+  row.forEach((cell, idx) => {
+    const key = EXPORT_HEADER_ALIASES[norm(cell)];
+    if (key && !(key in map)) map[key] = idx;
+  });
+  if ('seccion' in map && 'nombre' in map) return map;
+  return null;
+}
+
+/**
+ * Clasifica el valor de la columna SECCION.
+ * -> 'table' | 'column' | 'pk' | 'index' | 'fk' | ''
+ */
+function classifySection(v) {
+  const s = norm(v);
+  if (s === '') return '';
+  if (s === 'table' || s === 'tabla') return 'table';
+  if (s === 'column' || s === 'columna') return 'column';
+  if (s.includes('primary key') || s.includes('llave primaria') || s.includes('clave primaria')) return 'pk';
+  if (s.includes('foreign key') || s.includes('llave foranea') || s.includes('clave foranea') || s.includes('foránea')) return 'fk';
+  if (s.includes('index') || s.includes('indice') || s.includes('índice')) return 'index';
+  return '';
+}
+
+/**
+ * Compone "TIPO(LONGITUD)" a partir de las celdas correspondientes.
+ * NUMBER + "15,0" -> "NUMBER(15,0)"; VARCHAR2 + "36" -> "VARCHAR2(36)".
+ */
+function composeDataType(tipo, longitud) {
+  const t = cellText(tipo);
+  const l = cellText(longitud);
+  if (t === '') return l;
+  if (l === '') return t;
+  return `${t}(${l})`;
+}
+
+/**
+ * Parsea una hoja en formato Export. Devuelve un array de tablas
+ * (0, 1 o varias). Cada tabla usa el mismo shape que parseSheet.
+ */
+function parseExportSheet(aoa, sheetName, headerIdx, hmap) {
+  const at = (row, key) => (key in hmap && row ? cellText(row[hmap[key]]) : '');
+  const tables = [];
+  let cur = null;
+
+  const finish = () => {
+    if (cur && (cur.columns.length || cur.tableId || cur.entityName)) tables.push(cur);
+    cur = null;
+  };
+
+  const newTable = (id, entity) => ({
+    sheetName: tables.length ? `${sheetName} (${(id || entity || tables.length + 1)})` : sheetName,
+    tableId: id,
+    entityName: entity,
+    subSystem: '',
+    storagePeriod: '',
+    incrVolume: '',
+    columns: [],
+    indexes: [],
+    // Índice temporal nombre-de-columna -> objeto columna, para marcar PK
+    _byName: {},
+  });
+
+  for (let i = headerIdx + 1; i < aoa.length; i++) {
+    const row = aoa[i];
+    if (rowIsEmpty(row)) continue;
+    const kind = classifySection(at(row, 'seccion'));
+
+    if (kind === 'table') {
+      finish();
+      cur = newTable(at(row, 'nombre'), at(row, 'descripcion'));
+      continue;
+    }
+
+    // Si aparecen columnas/PK/índices sin una fila TABLE previa, abrimos una tabla implícita.
+    if (!cur) cur = newTable('', '');
+
+    if (kind === 'column') {
+      const col = {
+        no: at(row, 'posicion'),
+        attributeName: at(row, 'descripcion'),
+        columnName: at(row, 'nombre'),
+        dataType: composeDataType(at(row, 'tipo'), at(row, 'longitud')),
+        nullable: at(row, 'nullable'),
+        pk: '',
+        fk: '',
+        default: at(row, 'default'),
+        description: '',
+      };
+      cur.columns.push(col);
+      if (col.columnName) cur._byName[norm(col.columnName)] = col;
+    } else if (kind === 'pk') {
+      // La columna que forma parte de la PK viene en TIPO (o POSICION referencia el orden).
+      const colName = at(row, 'tipo') || at(row, 'nombre');
+      const target = cur._byName[norm(colName)];
+      if (target) target.pk = 'Y';
+    } else if (kind === 'fk') {
+      const colName = at(row, 'tipo') || at(row, 'nombre');
+      const target = cur._byName[norm(colName)];
+      if (target) target.fk = 'Y';
+    } else if (kind === 'index') {
+      const uniq = norm(at(row, 'seccion'));
+      const isUnique = uniq.includes('unique') && !uniq.includes('nonunique')
+        || uniq.includes('unico') || uniq.includes('único');
+      cur.indexes.push({
+        no: String(cur.indexes.length + 1),
+        name: at(row, 'nombre'),
+        columns: at(row, 'descripcion') || at(row, 'tipo'),
+        unique: isUnique ? 'UNIQUE' : 'NONUNIQUE',
+        partition: '',
+        local: at(row, 'default'),
+      });
+    }
+  }
+  finish();
+
+  // Limpiar el índice temporal antes de devolver.
+  tables.forEach(t => { delete t._byName; });
+  return tables;
+}
+
 /**
  * Parsea un File (Excel) y devuelve un objeto diccionario con todas las tablas.
+ * Detecta automáticamente el formato de cada hoja:
+ *   - "Export" (orientado a filas, con columna SECCION) -> puede dar varias tablas.
+ *   - "Diccionario" clásico (metadata + cabecera Column Name + INDEX) -> una tabla.
  * { name, sourceFile, importedAt, tables: [...] }
  */
 export async function parseExcelDictionary(file) {
@@ -276,6 +434,23 @@ export async function parseExcelDictionary(file) {
     // header:1 -> array de arrays; defval:'' para celdas vacías
     const aoa = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', blankrows: true, raw: false });
     if (!aoa || aoa.length === 0) continue;
+
+    // ¿Es formato Export? Buscar cabecera con SECCION + NOMBRE en las primeras filas.
+    let exportHeaderIdx = -1;
+    let exportMap = null;
+    const scanLimit = Math.min(aoa.length, 15);
+    for (let i = 0; i < scanLimit; i++) {
+      const hm = exportHeaderMap(aoa[i]);
+      if (hm) { exportHeaderIdx = i; exportMap = hm; break; }
+    }
+
+    if (exportHeaderIdx >= 0) {
+      const exportTables = parseExportSheet(aoa, sheetName, exportHeaderIdx, exportMap);
+      exportTables.forEach(t => tables.push(t));
+      continue;
+    }
+
+    // Formato clásico
     const parsed = parseSheet(aoa, sheetName);
     if (parsed) tables.push(parsed);
   }
