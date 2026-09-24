@@ -17,6 +17,7 @@ import {
   renderDictionariesPanel, importDictionary, renameDictionary,
   deleteDictionary, viewTable, handleDictSearch,
   openTableEditor, deleteTable, newEmptyDictionary,
+  viewDictionaryTables,
 } from './dictionaries.js';
 import { openImportModal, openBatchModal } from './import.js';
 import { exportBackup, importBackup, resetAll } from './backup.js';
@@ -171,6 +172,7 @@ function setupGlobalListeners() {
         viewTable(target.dataset.dictId, parseInt(target.dataset.tableIdx, 10), state.dictSearch || '');
         break;
       }
+      case 'dict-view-tables': viewDictionaryTables(target.dataset.dictId); break;
       case 'dict-rename': renameDictionary(target.dataset.dictId, render); break;
       case 'dict-delete': deleteDictionary(target.dataset.dictId, render); break;
       case 'dict-add-table': openTableEditor(target.dataset.dictId, null, render); break;
@@ -219,6 +221,12 @@ function setupGlobalListeners() {
     if (card && card.dataset.action === 'view') {
       e.preventDefault();
       viewQuery(card.dataset.id);
+      return;
+    }
+    const dictCard = e.target.closest('.dict-card');
+    if (dictCard && dictCard.dataset.action === 'dict-view-tables' && e.target === dictCard) {
+      e.preventDefault();
+      viewDictionaryTables(dictCard.dataset.dictId);
     }
   });
 

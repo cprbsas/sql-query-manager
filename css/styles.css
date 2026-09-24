@@ -1050,10 +1050,12 @@ button[type="button"] {
   border-radius:14px;
   padding:14px 16px;
   margin-bottom:10px;
+  cursor:pointer;
   box-shadow:var(--shadow-sm);
   transition:border-color .2s var(--ease), box-shadow .2s var(--ease);
 }
 .dict-card:hover{border-color:var(--accent4);box-shadow:var(--shadow-md)}
+.dict-card:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .dict-card-header{
   display:flex;justify-content:space-between;
   align-items:flex-start;gap:10px;margin-bottom:10px;
@@ -1111,6 +1113,47 @@ button[type="button"] {
   font-size:11px;color:var(--text3);
   font-style:italic;margin-top:4px;
   font-family:var(--sans);
+}
+
+/* Listado de tablas de un diccionario (modal) */
+.dict-table-list{display:flex;flex-direction:column;gap:6px}
+.dict-table-list-item{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:10px;flex-wrap:wrap;
+  width:100%;text-align:left;
+  background:var(--bg1);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:10px 12px;
+  cursor:pointer;
+  font-family:inherit;
+  transition:border-color .15s var(--ease), box-shadow .15s var(--ease);
+}
+.dict-table-list-item:hover, .dict-table-list-item:focus-visible{
+  border-color:var(--accent4);
+  box-shadow:var(--shadow-sm);
+}
+.dict-table-list-main{display:flex;align-items:baseline;gap:8px;min-width:0}
+.dict-table-list-id{
+  font-family:var(--mono);font-size:12px;
+  font-weight:600;color:var(--accent);
+  white-space:nowrap;
+}
+.dict-table-list-name{
+  font-size:12.5px;color:var(--text0);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.dict-table-list-meta{
+  display:flex;align-items:center;gap:6px;flex-shrink:0;
+}
+.dict-table-list-sub{
+  font-size:10.5px;color:var(--text2);
+  background:var(--bg2);padding:2px 7px;border-radius:8px;
+  font-family:var(--mono);
+}
+.dict-table-list-cols, .dict-table-list-idx{
+  font-size:10px;color:var(--text3);
+  font-family:var(--mono);
 }
 
 /* Grupos de resultados por diccionario */

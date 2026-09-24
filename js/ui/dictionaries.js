@@ -156,7 +156,9 @@ function renderDictCard(dict) {
   });
   const subList = Array.from(subSystems);
   return `
-    <div class="dict-card" data-dict-id="${esc(dict.id)}">
+    <div class="dict-card" data-dict-id="${esc(dict.id)}"
+      role="button" tabindex="0" data-action="dict-view-tables"
+      aria-label="Ver tablas de ${esc(dict.name)}">
       <div class="dict-card-header">
         <div>
           <div class="dict-card-title">${esc(dict.name)}</div>
@@ -194,7 +196,7 @@ function renderDictCard(dict) {
           ${subList.length > 6 ? `<span class="dict-sub-more">+${subList.length - 6}</span>` : ''}
         </div>
       ` : ''}
-      <div class="dict-card-hint">Empieza a escribir arriba para buscar tablas o columnas dentro de este diccionario.</div>
+      <div class="dict-card-hint">Clic para ver el listado de tablas, o escribe arriba para buscar.</div>
     </div>
   `;
 }
@@ -241,6 +243,98 @@ function renderSearchResult(r, dictId) {
   `;
 }
 
+// ─── Listado de tablas de un diccionario (modal) ───
+
+function renderDictTableListItem(table, idx) {
+  const colCount = (table.columns || []).length;
+  const idxCount = (table.indexes || []).length;
+  return `
+    <button type="button" class="dict-table-list-item" data-action="dict-open-table" data-table-idx="${idx}">
+      <div class="dict-table-list-main">
+        <span class="dict-table-list-id">${esc(table.tableId || table.sheetName || '—')}</span>
+        <span class="dict-table-list-name">${esc(table.entityName || '')}</span>
+      </div>
+      <div class="dict-table-list-meta">
+        ${table.subSystem ? `<span class="dict-table-list-sub">${esc(table.subSystem)}</span>` : ''}
+        <span class="dict-table-list-cols">${colCount} col${colCount === 1 ? '' : 's'}</span>
+        ${idxCount ? `<span class="dict-table-list-idx">${idxCount} idx</span>` : ''}
+      </div>
+    </button>
+  `;
+}
+
+/**
+ * Abre un modal con el listado de tablas de un diccionario, filtrable,
+ * desde donde se puede hacer clic en una tabla para ver su ficha completa.
+ */
+export function viewDictionaryTables(dictId, filterTerm = '') {
+  const dict = state.dictionaries.find(d => d.id === dictId);
+  if (!dict) return;
+  const tables = dict.tables || [];
+
+  const renderList = (term) => {
+    const q = normalize(term);
+    const filtered = tables
+      .map((t, idx) => ({ t, idx }))
+      .filter(({ t }) => !q || normalize(
+        [t.tableId, t.entityName, t.sheetName, t.subSystem].filter(Boolean).join(' ')
+      ).includes(q));
+    if (filtered.length === 0) {
+      return `<div class="empty-state"><p>Sin tablas que coincidan con "<strong>${esc(term)}</strong>".</p></div>`;
+    }
+    return `<div class="dict-table-list">${filtered.map(({ t, idx }) => renderDictTableListItem(t, idx)).join('')}</div>`;
+  };
+
+  const content = `
+    <div class="dict-table-list-wrap">
+      ${tables.length > 0 ? `
+        <div class="search-wrap dict-search-wrap" style="margin-bottom:12px">
+          <span class="search-prefix" aria-hidden="true">›_</span>
+          <input class="search-input" id="dict-table-list-search" type="search"
+            placeholder="filtrar tablas por nombre, id o subsistema..."
+            value="${esc(filterTerm)}" aria-label="Filtrar tablas">
+        </div>
+        <div id="dict-table-list-body">${renderList(filterTerm)}</div>
+      ` : `
+        <div class="empty-state">
+          <p>Este diccionario todavía no tiene tablas.</p>
+          <div style="margin-top:14px">
+            <button type="button" class="btn btn-primary" data-action="dict-add-table" data-dict-id="${esc(dictId)}">+ tabla</button>
+          </div>
+        </div>
+      `}
+    </div>
+  `;
+
+  openModal(`${dict.name} — ${tables.length} ${tables.length === 1 ? 'tabla' : 'tablas'}`, content, 720);
+
+  const overlay = document.getElementById('modal-overlay');
+  if (!overlay) return;
+
+  const input = document.getElementById('dict-table-list-search');
+  if (input) {
+    input.addEventListener('input', debounce(() => {
+      const body = document.getElementById('dict-table-list-body');
+      if (body) body.innerHTML = renderList(input.value);
+    }, SEARCH_DEBOUNCE_MS));
+    setTimeout(() => input.focus(), 40);
+  }
+
+  overlay.addEventListener('click', e => {
+    const openBtn = e.target.closest('[data-action="dict-open-table"]');
+    if (openBtn) {
+      const tIdx = parseInt(openBtn.dataset.tableIdx, 10);
+      viewTable(dictId, tIdx, '', dictId);
+      return;
+    }
+    const addBtn = e.target.closest('[data-action="dict-add-table"]');
+    if (addBtn) {
+      closeModal();
+      openTableEditor(dictId, null, _viewRerender || (() => {}));
+    }
+  });
+}
+
 // ─── Ficha completa de la tabla (modal) ───
 
 /**
@@ -283,7 +377,7 @@ function highlightText(text, term) {
 let _viewRerender = null;
 export function setViewRerender(fn) { _viewRerender = fn; }
 
-export function viewTable(dictId, tableIdx, highlightTerm = '') {
+export function viewTable(dictId, tableIdx, highlightTerm = '', backToList = null) {
   const dict = state.dictionaries.find(d => d.id === dictId);
   if (!dict) return;
   const table = dict.tables[tableIdx];
@@ -311,6 +405,8 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
   const content = `
     <div class="table-view">
       <div class="table-view-actions">
+        ${backToList ? `<button type="button" class="btn btn-sm" data-action="dict-back-to-list"
+          data-dict-id="${esc(backToList)}">← tablas</button>` : ''}
         <button type="button" class="btn btn-sm" data-action="dict-copy-select"
           data-dict-id="${esc(dictId)}" data-table-idx="${tableIdx}">copiar SELECT</button>
         <button type="button" class="btn btn-sm" data-action="dict-download-table"
@@ -408,7 +504,10 @@ export function viewTable(dictId, tableIdx, highlightTerm = '') {
       const action = btn.dataset.action;
       const dId = btn.dataset.dictId;
       const tIdx = parseInt(btn.dataset.tableIdx, 10);
-      if (action === 'dict-edit-table') {
+      if (action === 'dict-back-to-list') {
+        closeModal();
+        viewDictionaryTables(dId);
+      } else if (action === 'dict-edit-table') {
         closeModal();
         openTableEditor(dId, tIdx, _viewRerender || (()=>{}));
       } else if (action === 'dict-delete-table') {
