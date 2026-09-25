@@ -1255,7 +1255,7 @@ button[type="button"] {
 /* Panel flotante con el significado de un código común */
 .common-code-popover{
   position:fixed;z-index:1100;
-  width:320px;max-width:calc(100vw - 24px);
+  width:440px;max-width:calc(100vw - 24px);
   max-height:360px;overflow:auto;
   background:var(--bg1);
   border:1px solid var(--border);
@@ -1269,6 +1269,7 @@ button[type="button"] {
   gap:8px;padding:10px 12px;
   border-bottom:1px solid var(--border);
   position:sticky;top:0;background:var(--bg1);
+  z-index:1;
 }
 .common-code-popover-title{font-size:12.5px;font-weight:600;color:var(--text0)}
 .common-code-popover-title .mono{font-family:var(--mono);color:var(--accent)}
@@ -1277,16 +1278,11 @@ button[type="button"] {
   color:var(--text2);font-size:14px;line-height:1;padding:2px 4px;
 }
 .common-code-popover-close:hover{color:var(--text0)}
-.common-code-popover-body{padding:8px 12px 12px;display:flex;flex-direction:column;gap:8px}
-.common-code-popover-empty{font-size:12px;color:var(--text2);margin:4px 0}
-.common-code-popover-item{
-  display:flex;flex-direction:column;gap:2px;
-  padding:8px 10px;border-radius:8px;
-  background:var(--bg2);border:1px solid var(--border);
-}
-.common-code-popover-detail{font-family:var(--mono);font-size:11.5px;font-weight:600;color:var(--accent)}
-.common-code-popover-name{font-size:12px;color:var(--text0);font-weight:500}
-.common-code-popover-desc{font-size:11px;color:var(--text2);font-style:italic}
+.common-code-popover-body{padding:8px}
+.common-code-popover-empty{font-size:12px;color:var(--text2);margin:4px}
+.common-code-popover .table-cols-wrap{border:none}
+.common-code-popover .table-cols th{position:static;padding:5px 8px}
+.common-code-popover .table-cols td{padding:4px 8px}
 
 /* Vista ficha de tabla (modal) */
 .table-view{font-family:var(--sans)}

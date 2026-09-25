@@ -439,7 +439,9 @@ function closeCommonCodePopover() {
  */
 function showCommonCodePopover(code, anchorEl) {
   closeCommonCodePopover();
-  const entries = findCommonCodeEntries(code);
+  const entries = findCommonCodeEntries(code).sort((a, b) =>
+    (a.col.columnName || '').localeCompare(b.col.columnName || '', undefined, { numeric: true, sensitivity: 'base' })
+  );
 
   const pop = document.createElement('div');
   pop.className = 'common-code-popover';
@@ -454,13 +456,24 @@ function showCommonCodePopover(code, anchorEl) {
     <div class="common-code-popover-body">
       ${entries.length === 0
         ? `<p class="common-code-popover-empty">Sin datos para "${esc(code)}". Importa el diccionario de códigos comunes (ej. TBAED141) para ver su significado.</p>`
-        : entries.map(en => `
-          <div class="common-code-popover-item">
-            <span class="common-code-popover-detail">${esc(en.col.columnName)}</span>
-            ${en.col.default ? `<span class="common-code-popover-name">${esc(en.col.default)}</span>` : ''}
-            ${en.col.description ? `<span class="common-code-popover-desc">${esc(en.col.description)}</span>` : ''}
+        : `
+          <div class="table-cols-wrap">
+            <table class="table-cols">
+              <thead>
+                <tr><th>Código</th><th>Nombre</th><th>Descripción</th></tr>
+              </thead>
+              <tbody>
+                ${entries.map(en => `
+                  <tr>
+                    <td class="mono">${esc(en.col.columnName)}</td>
+                    <td>${esc(en.col.default)}</td>
+                    <td>${esc(en.col.description)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
           </div>
-        `).join('')}
+        `}
     </div>
   `;
   document.body.appendChild(pop);
