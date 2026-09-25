@@ -15,6 +15,18 @@ let _rerender = null;
 export function setDriveRerender(fn) { _rerender = fn; }
 function doRerender() { if (typeof _rerender === 'function') _rerender(); }
 
+/**
+ * Línea de resumen con el detalle de un estado (local o Drive) para
+ * mostrar en el diálogo de conflicto de sincronización.
+ */
+function summarizeState(label, d, date) {
+  const dicts = Array.isArray(d.dictionaries) ? d.dictionaries : [];
+  const tableCount = dicts.reduce((sum, dic) => sum + ((dic.tables && dic.tables.length) || 0), 0);
+  return `${label} — ${formatDateTime(date.toISOString())}\n` +
+    `  ${(d.queries || []).length} consultas · ${(d.categories || []).length} categorías · ` +
+    `${(d.databases || []).length} bases de datos · ${dicts.length} diccionarios (${tableCount} tablas)`;
+}
+
 // Estado interno encapsulado
 const drive = {
   token: null,
@@ -254,11 +266,13 @@ export async function loadFromDrive(rerender) {
       }
 
       // Decidir merge
+      const summary =
+        `${summarizeState('Drive', data, driveDate)}\n\n` +
+        `${summarizeState('Local', localData, localDate)}`;
+
       if (localDate > driveDate) {
         const keepLocal = await confirmDialog(
-          `Drive: ${data.queries.length} consultas (${formatDateTime(driveDate.toISOString())}).\n` +
-          `Local: ${localData.queries.length} consultas (${formatDateTime(localDate.toISOString())}).\n\n` +
-          `Tu copia local es más reciente. ¿Subirla a Drive?`,
+          `${summary}\n\nTu copia local es más reciente. ¿Subirla a Drive?`,
           { title: 'Conflicto de sincronización', confirmText: 'Subir local a Drive', cancelText: 'Cargar Drive' }
         );
         if (keepLocal) {
@@ -272,9 +286,7 @@ export async function loadFromDrive(rerender) {
       } else if (driveDate > localDate) {
         // Drive es más reciente — preguntar antes de sobrescribir local
         const accept = await confirmDialog(
-          `Drive: ${data.queries.length} consultas (${formatDateTime(driveDate.toISOString())}).\n` +
-          `Local: ${localData.queries.length} consultas (${formatDateTime(localDate.toISOString())}).\n\n` +
-          `Drive tiene una versión más reciente. ¿Reemplazar local con Drive?`,
+          `${summary}\n\nDrive tiene una versión más reciente. ¿Reemplazar local con Drive?`,
           { title: 'Conflicto de sincronización', confirmText: 'Reemplazar local', cancelText: 'Mantener local' }
         );
         if (!accept) {
