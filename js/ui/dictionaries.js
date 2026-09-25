@@ -612,6 +612,89 @@ function downloadTableDict(dictId, tableIdx) {
 
 // ─── Acciones ───
 
+/**
+ * Contenido del modal donde se elige a qué diccionario van las tablas
+ * recién parseadas: uno existente (se agregan a sus tablas) o uno nuevo
+ * (comportamiento original, diccionario independiente).
+ */
+function renderImportTargetModal(parsedDict) {
+  const dicts = state.dictionaries;
+  const tableWord = parsedDict.tables.length === 1 ? 'tabla' : 'tablas';
+  return `
+    <div class="import-target">
+      <p class="import-target-summary">
+        ${parsedDict.tables.length} ${tableWord} detectada${parsedDict.tables.length === 1 ? '' : 's'}
+        en <strong>${esc(parsedDict.sourceFile)}</strong>.
+      </p>
+      <label class="label" for="import-target-select">Agregar a</label>
+      <select id="import-target-select">
+        <option value="__new__">+ Nuevo diccionario</option>
+        ${dicts.map(d => {
+          const n = d.tables.length;
+          return `<option value="${esc(d.id)}">${esc(d.name)} (${n} ${n === 1 ? 'tabla' : 'tablas'})</option>`;
+        }).join('')}
+      </select>
+      <div id="import-target-new-wrap" style="margin-top:10px">
+        <label class="label" for="import-target-new-name">Nombre del diccionario nuevo</label>
+        <input type="text" id="import-target-new-name" value="${esc(parsedDict.name)}">
+      </div>
+      <div class="editor-actions" style="margin-top:16px">
+        <button type="button" class="btn" data-action="import-target-cancel">Cancelar</button>
+        <button type="button" class="btn btn-primary" data-action="import-target-confirm">Importar</button>
+      </div>
+    </div>
+  `;
+}
+
+/**
+ * Abre el modal de selección de destino y aplica la importación según
+ * lo que el usuario elija.
+ */
+function openImportTargetPicker(parsedDict, rerender) {
+  openModal('Importar tablas', renderImportTargetModal(parsedDict), 480);
+  const overlay = document.getElementById('modal-overlay');
+  if (!overlay) return;
+
+  const select = document.getElementById('import-target-select');
+  const newWrap = document.getElementById('import-target-new-wrap');
+  const syncNewWrap = () => {
+    if (newWrap) newWrap.style.display = select && select.value === '__new__' ? '' : 'none';
+  };
+  if (select) select.addEventListener('change', syncNewWrap);
+  syncNewWrap();
+
+  overlay.addEventListener('click', e => {
+    const btn = e.target.closest('[data-action]');
+    if (!btn) return;
+    if (btn.dataset.action === 'import-target-cancel') {
+      closeModal();
+      return;
+    }
+    if (btn.dataset.action !== 'import-target-confirm') return;
+
+    const targetId = select ? select.value : '__new__';
+    if (targetId === '__new__') {
+      const nameInput = document.getElementById('import-target-new-name');
+      const name = (nameInput && nameInput.value.trim()) || parsedDict.name;
+      parsedDict.id = genId('dict');
+      parsedDict.name = name;
+      state.dictionaries.push(parsedDict);
+      saveState();
+      closeModal();
+      rerender();
+      showToast(`${parsedDict.tables.length} tablas importadas en nuevo diccionario "${name}"`);
+    } else {
+      const target = state.dictionaries.find(d => d.id === targetId);
+      if (!target) { closeModal(); return; }
+      target.tables.push(...parsedDict.tables);
+      saveState();
+      closeModal();
+      rerender();
+      showToast(`${parsedDict.tables.length} tablas agregadas a "${target.name}"`);
+    }
+  });
+}
+
 export async function importDictionary(e, rerender) {
   const file = e.target.files[0];
   e.target.value = '';
@@ -627,11 +710,15 @@ export async function importDictionary(e, rerender) {
       showToast('Ninguna hoja del Excel tiene formato reconocible (falta cabecera con "Column Name").', 'error');
       return;
     }
-    dict.id = genId('dict');
-    state.dictionaries.push(dict);
-    saveState();
-    rerender();
-    showToast(`${dict.tables.length} tablas importadas desde ${dict.sourceFile}`);
+    if (state.dictionaries.length > 0) {
+      openImportTargetPicker(dict, rerender);
+    } else {
+      dict.id = genId('dict');
+      state.dictionaries.push(dict);
+      saveState();
+      rerender();
+      showToast(`${dict.tables.length} tablas importadas desde ${dict.sourceFile}`);
+    }
   } catch (err) {
     console.error('Error parseando Excel:', err);
     showToast(`Error: ${err.message || 'No se pudo parsear el Excel'}`, 'error');

@@ -1115,6 +1115,10 @@ button[type="button"] {
   font-family:var(--sans);
 }
 
+/* Selección de diccionario destino al importar Excel (modal) */
+.import-target-summary{font-size:12.5px;color:var(--text1);margin:0 0 14px}
+.import-target select, .import-target input{width:100%}
+
 /* Listado de tablas de un diccionario (modal) */
 .dict-table-list{display:flex;flex-direction:column;gap:6px}
 .dict-table-list-item{
