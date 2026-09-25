@@ -417,6 +417,79 @@ function parseExportSheet(aoa, sheetName, headerIdx, hmap) {
   return tables;
 }
 
+// ─── Formato "Códigos comunes" (COMN_CD / COMN_DETAIL_CD) ───
+//
+// Tablas maestras de códigos comunes (ej. TBAED141 / AE_DetailCommonCode):
+// una fila por cada código de detalle, con cabecera:
+//   COMN_CD | COMN_DETAIL_CD | COMN_DETAIL_CD_NM | COMN_DETAIL_CD_DESC
+// Se guarda como una tabla más, reutilizando el shape de columnas:
+// attributeName = grupo, columnName = código de detalle,
+// default = nombre, description = descripción.
+
+function normKey(s) {
+  return norm(s).replace(/[_\s]+/g, '');
+}
+
+const COMMON_CODE_ALIASES = {
+  comncd: 'groupCd',
+  comndetailcd: 'detailCd',
+  comndetailcdnm: 'detailNm',
+  comndetailcddesc: 'detailDesc',
+};
+
+/**
+ * Construye un mapa {claveInterna: indiceColumna} si la fila es cabecera
+ * del formato de códigos comunes. Requisito mínimo: COMN_CD + COMN_DETAIL_CD.
+ */
+function commonCodeHeaderMap(row) {
+  if (!row) return null;
+  const map = {};
+  row.forEach((cell, idx) => {
+    const key = COMMON_CODE_ALIASES[normKey(cell)];
+    if (key && !(key in map)) map[key] = idx;
+  });
+  if ('groupCd' in map && 'detailCd' in map) return map;
+  return null;
+}
+
+/**
+ * Parsea una hoja de códigos comunes. Devuelve una sola tabla con una
+ * "columna" por cada fila de código de detalle, o null si no hay filas.
+ */
+function parseCommonCodeSheet(aoa, sheetName, headerIdx, hmap) {
+  const at = (row, key) => (key in hmap && row ? cellText(row[hmap[key]]) : '');
+  const columns = [];
+  for (let i = headerIdx + 1; i < aoa.length; i++) {
+    const row = aoa[i];
+    if (rowIsEmpty(row)) continue;
+    const groupCd = at(row, 'groupCd');
+    const detailCd = at(row, 'detailCd');
+    if (!groupCd && !detailCd) continue;
+    columns.push({
+      no: String(columns.length + 1),
+      attributeName: groupCd,
+      columnName: detailCd,
+      dataType: '',
+      nullable: '',
+      pk: '',
+      fk: '',
+      default: at(row, 'detailNm'),
+      description: at(row, 'detailDesc'),
+    });
+  }
+  if (columns.length === 0) return null;
+  return {
+    sheetName,
+    tableId: '',
+    entityName: '',
+    subSystem: '',
+    storagePeriod: '',
+    incrVolume: '',
+    columns,
+    indexes: [],
+  };
+}
+
 /**
  * Parsea un File (Excel) y devuelve un objeto diccionario con todas las tablas.
  * Detecta automáticamente el formato de cada hoja:
@@ -447,6 +520,20 @@ export async function parseExcelDictionary(file) {
     if (exportHeaderIdx >= 0) {
       const exportTables = parseExportSheet(aoa, sheetName, exportHeaderIdx, exportMap);
       exportTables.forEach(t => tables.push(t));
+      continue;
+    }
+
+    // ¿Es formato de códigos comunes? (COMN_CD / COMN_DETAIL_CD)
+    let commonCodeHeaderIdx = -1;
+    let commonCodeMap = null;
+    for (let i = 0; i < scanLimit; i++) {
+      const hm = commonCodeHeaderMap(aoa[i]);
+      if (hm) { commonCodeHeaderIdx = i; commonCodeMap = hm; break; }
+    }
+
+    if (commonCodeHeaderIdx >= 0) {
+      const t = parseCommonCodeSheet(aoa, sheetName, commonCodeHeaderIdx, commonCodeMap);
+      if (t) tables.push(t);
       continue;
     }
 

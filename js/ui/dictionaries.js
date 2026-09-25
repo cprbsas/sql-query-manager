@@ -372,6 +372,129 @@ function highlightText(text, term) {
   }
 }
 
+// ─── Códigos comunes referenciados en descripciones ───
+// Ej: "...THE CODE CLASSIFY EITHER NEGATIVE BALANCE OR NOT COMMON CODE : AB069"
+// -> el código "AB069" se vuelve clickeable y busca su significado en
+// cualquier tabla de códigos comunes ya importada (attributeName = grupo).
+const COMMON_CODE_REF_RE = /COMMON\s+CODE\s*:?\s*([A-Za-z0-9]{2,15})\b/i;
+
+/**
+ * Busca en todos los diccionarios las columnas cuyo "grupo" (attributeName)
+ * coincide con el código dado. Cada match representa un código de detalle
+ * (columnName) con su nombre (default) y descripción (description).
+ */
+function findCommonCodeEntries(code) {
+  const q = normalize(code);
+  const entries = [];
+  for (const dict of state.dictionaries) {
+    for (const table of dict.tables || []) {
+      for (const col of table.columns || []) {
+        if (col.attributeName && normalize(col.attributeName) === q) {
+          entries.push({ col, table, dictName: dict.name });
+        }
+      }
+    }
+  }
+  return entries;
+}
+
+/**
+ * Igual que highlightText, pero además detecta una referencia a código
+ * común dentro del texto y la envuelve en un botón clickeable.
+ */
+function renderDescriptionCell(text, term) {
+  if (!text) return '';
+  const m = COMMON_CODE_REF_RE.exec(text);
+  if (!m) return highlightText(text, term);
+
+  const code = m[1];
+  const codeStart = m.index + m[0].length - code.length;
+  const codeEnd = codeStart + code.length;
+  const before = text.slice(0, codeStart);
+  const codeText = text.slice(codeStart, codeEnd);
+  const after = text.slice(codeEnd);
+
+  return (
+    highlightText(before, term) +
+    `<button type="button" class="dict-common-code-link" data-action="dict-lookup-common" data-code="${esc(code)}">${highlightText(codeText, term)}</button>` +
+    highlightText(after, term)
+  );
+}
+
+let _commonCodePopoverCleanup = null;
+
+function closeCommonCodePopover() {
+  const el = document.getElementById('common-code-popover');
+  if (el) el.remove();
+  if (_commonCodePopoverCleanup) {
+    _commonCodePopoverCleanup();
+    _commonCodePopoverCleanup = null;
+  }
+}
+
+/**
+ * Panel flotante (no modal) con el significado de un código común, anclado
+ * cerca del elemento clickeado. No cierra el modal de ficha de tabla que
+ * pueda estar abierto detrás.
+ */
+function showCommonCodePopover(code, anchorEl) {
+  closeCommonCodePopover();
+  const entries = findCommonCodeEntries(code);
+
+  const pop = document.createElement('div');
+  pop.className = 'common-code-popover';
+  pop.id = 'common-code-popover';
+  pop.setAttribute('role', 'dialog');
+  pop.setAttribute('aria-label', `Código común ${code}`);
+  pop.innerHTML = `
+    <div class="common-code-popover-head">
+      <span class="common-code-popover-title">Código común <span class="mono">${esc(code)}</span></span>
+      <button type="button" class="common-code-popover-close" aria-label="Cerrar">✕</button>
+    </div>
+    <div class="common-code-popover-body">
+      ${entries.length === 0
+        ? `<p class="common-code-popover-empty">Sin datos para "${esc(code)}". Importa el diccionario de códigos comunes (ej. TBAED141) para ver su significado.</p>`
+        : entries.map(en => `
+          <div class="common-code-popover-item">
+            <span class="common-code-popover-detail">${esc(en.col.columnName)}</span>
+            ${en.col.default ? `<span class="common-code-popover-name">${esc(en.col.default)}</span>` : ''}
+            ${en.col.description ? `<span class="common-code-popover-desc">${esc(en.col.description)}</span>` : ''}
+          </div>
+        `).join('')}
+    </div>
+  `;
+  document.body.appendChild(pop);
+
+  // Posicionar cerca del elemento clickeado, sin salirse del viewport
+  const rect = anchorEl.getBoundingClientRect();
+  const popRect = pop.getBoundingClientRect();
+  let top = rect.bottom + 6;
+  let left = rect.left;
+  const maxLeft = window.innerWidth - popRect.width - 12;
+  if (left > maxLeft) left = Math.max(12, maxLeft);
+  const maxTop = window.innerHeight - popRect.height - 12;
+  if (top > maxTop) top = Math.max(12, rect.top - popRect.height - 6);
+  pop.style.top = `${top}px`;
+  pop.style.left = `${left}px`;
+
+  const onOutsideClick = e => {
+    if (!pop.contains(e.target) && e.target !== anchorEl) closeCommonCodePopover();
+  };
+  const onEsc = e => { if (e.key === 'Escape') closeCommonCodePopover(); };
+  // Se registra en el siguiente tick para no capturar el mismo click que abrió el panel.
+  setTimeout(() => {
+    document.addEventListener('click', onOutsideClick, true);
+    document.addEventListener('keydown', onEsc);
+  }, 0);
+
+  pop.querySelector('.common-code-popover-close').addEventListener('click', closeCommonCodePopover);
+
+  _commonCodePopoverCleanup = () => {
+    document.removeEventListener('click', onOutsideClick, true);
+    document.removeEventListener('keydown', onEsc);
+  };
+}
+
 // Hook que main.js / render.js puede establecer para re-renderizar el panel
 // desde dentro de listeners del modal (donde no hay acceso directo a render).
 let _viewRerender = null;
@@ -453,7 +576,7 @@ export function viewTable(dictId, tableIdx, highlightTerm = '', backToList = nul
                 <td class="center">${c.pk ? `<span class="badge badge-pk">${esc(c.pk)}</span>` : ''}</td>
                 <td class="center">${c.fk ? `<span class="badge badge-fk">${esc(c.fk)}</span>` : ''}</td>
                 <td>${esc(c.default)}</td>
-                <td>${h(c.description)}</td>
+                <td>${renderDescriptionCell(c.description, hl)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -517,6 +640,8 @@ export function viewTable(dictId, tableIdx, highlightTerm = '', backToList = nul
         copySelectStar(dId, tIdx, btn);
       } else if (action === 'dict-download-table') {
         downloadTableDict(dId, tIdx);
+      } else if (action === 'dict-lookup-common') {
+        showCommonCodePopover(btn.dataset.code, btn);
       }
     });
   }
