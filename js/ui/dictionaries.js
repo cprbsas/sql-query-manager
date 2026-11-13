@@ -168,6 +168,7 @@ function renderDictCard(dict) {
         </div>
         <div class="dict-card-actions">
           <button type="button" class="btn btn-sm" data-action="dict-add-table" data-dict-id="${esc(dict.id)}">+ tabla</button>
+          <button type="button" class="btn btn-sm" data-action="dict-download-md" data-dict-id="${esc(dict.id)}" title="Descargar el diccionario completo en Markdown">descargar .md</button>
           <button type="button" class="btn btn-sm" data-action="dict-rename" data-dict-id="${esc(dict.id)}">renombrar</button>
           <button type="button" class="btn btn-sm btn-danger" data-action="dict-delete" data-dict-id="${esc(dict.id)}">eliminar</button>
         </div>
@@ -687,15 +688,20 @@ function copySelectStar(dictId, tableIdx, btn) {
 }
 
 /**
- * Genera y descarga el diccionario individual de una tabla en formato Markdown,
- * con sus metadatos, columnas e índices.
+ * Escapa texto para una celda de tabla Markdown (pipes y saltos de línea).
  */
-function downloadTableDict(dictId, tableIdx) {
-  const dict = state.dictionaries.find(d => d.id === dictId);
-  const table = dict && dict.tables[tableIdx];
-  if (!table) return;
+function mdCell(v) {
+  return (v ?? '').toString().replace(/\|/g, '\\|').replace(/\r?\n/g, ' ');
+}
 
+/**
+ * Devuelve las líneas Markdown de una tabla (metadatos, columnas e índices).
+ * `level` es el nivel del encabezado del título de la tabla.
+ */
+function tableToMarkdownLines(table, dict, level = 1) {
   const tableName = table.tableId || table.sheetName || table.entityName || 'tabla';
+  const hTitle = '#'.repeat(level);
+  const hSection = '#'.repeat(level + 1);
 
   const metaRows = [
     ['Table ID', table.tableId],
@@ -707,45 +713,102 @@ function downloadTableDict(dictId, tableIdx) {
     ['Diccionario', dict.name],
   ].filter(([_, v]) => v);
 
+  const columns = table.columns || [];
   const lines = [];
-  lines.push(`# ${table.tableId || table.sheetName}${table.entityName ? ` — ${table.entityName}` : ''}`);
+  lines.push(`${hTitle} ${table.tableId || table.sheetName}${table.entityName ? ` — ${table.entityName}` : ''}`);
   lines.push('');
   metaRows.forEach(([k, v]) => lines.push(`- **${k}:** ${v}`));
   lines.push('');
 
-  lines.push(`## Columnas (${table.columns.length})`);
+  lines.push(`${hSection} Columnas (${columns.length})`);
   lines.push('');
   lines.push('| # | Attribute | Column | Tipo | Null | PK | FK | Default | Descripción |');
   lines.push('|---|---|---|---|---|---|---|---|---|');
-  table.columns.forEach(c => {
-    lines.push(`| ${c.no ?? ''} | ${c.attributeName ?? ''} | ${c.columnName ?? ''} | ${c.dataType ?? ''} | ${c.nullable ?? ''} | ${c.pk ?? ''} | ${c.fk ?? ''} | ${c.default ?? ''} | ${(c.description ?? '').toString().replace(/\|/g, '\\|')} |`);
+  columns.forEach(c => {
+    lines.push(`| ${mdCell(c.no)} | ${mdCell(c.attributeName)} | ${mdCell(c.columnName)} | ${mdCell(c.dataType)} | ${mdCell(c.nullable)} | ${mdCell(c.pk)} | ${mdCell(c.fk)} | ${mdCell(c.default)} | ${mdCell(c.description)} |`);
   });
 
   if (table.indexes && table.indexes.length > 0) {
     lines.push('');
-    lines.push(`## Índices (${table.indexes.length})`);
+    lines.push(`${hSection} Índices (${table.indexes.length})`);
     lines.push('');
     lines.push('| # | Nombre | Columnas | Único | Partition | Local |');
     lines.push('|---|---|---|---|---|---|');
     table.indexes.forEach(ix => {
-      lines.push(`| ${ix.no ?? ''} | ${ix.name ?? ''} | ${ix.columns ?? ''} | ${ix.unique ?? ''} | ${ix.partition ?? ''} | ${ix.local ?? ''} |`);
+      lines.push(`| ${mdCell(ix.no)} | ${mdCell(ix.name)} | ${mdCell(ix.columns)} | ${mdCell(ix.unique)} | ${mdCell(ix.partition)} | ${mdCell(ix.local)} |`);
     });
   }
 
   lines.push('');
   lines.push(`SELECT * FROM ${tableName};`);
+  return lines;
+}
 
-  const md = lines.join('\n');
-
+function downloadMarkdown(md, baseName) {
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
-  const now = new Date();
-  const dt = now.toISOString().slice(0, 10);
-  const safeName = tableName.replace(/[^a-zA-Z0-9_.-]+/g, '_');
+  const dt = new Date().toISOString().slice(0, 10);
+  const safeName = baseName.replace(/[^a-zA-Z0-9_.-]+/g, '_');
   a.download = `dict_${safeName}_${dt}.md`;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+/**
+ * Genera y descarga el diccionario individual de una tabla en formato Markdown,
+ * con sus metadatos, columnas e índices.
+ */
+function downloadTableDict(dictId, tableIdx) {
+  const dict = state.dictionaries.find(d => d.id === dictId);
+  const table = dict && dict.tables[tableIdx];
+  if (!table) return;
+
+  const tableName = table.tableId || table.sheetName || table.entityName || 'tabla';
+  downloadMarkdown(tableToMarkdownLines(table, dict, 1).join('\n'), tableName);
   showToast('diccionario de tabla descargado');
+}
+
+/**
+ * Genera y descarga el diccionario completo de una base de datos en Markdown:
+ * encabezado con resumen, índice de tablas y la ficha de cada tabla.
+ */
+export function downloadDictionaryMarkdown(dictId) {
+  const dict = state.dictionaries.find(d => d.id === dictId);
+  if (!dict) return;
+  const tables = dict.tables || [];
+  if (tables.length === 0) {
+    showToast('Este diccionario no tiene tablas', 'error');
+    return;
+  }
+
+  const totalCols = tables.reduce((s, t) => s + (t.columns || []).length, 0);
+  const lines = [];
+  lines.push(`# Diccionario: ${dict.name}`);
+  lines.push('');
+  if (dict.sourceFile) lines.push(`- **Origen:** ${dict.sourceFile}`);
+  if (dict.importedAt) lines.push(`- **Importado:** ${formatDateTime(dict.importedAt)}`);
+  lines.push(`- **Tablas:** ${tables.length}`);
+  lines.push(`- **Columnas:** ${totalCols}`);
+  lines.push(`- **Generado:** ${formatDateTime(new Date().toISOString())}`);
+  lines.push('');
+
+  lines.push('## Tablas');
+  lines.push('');
+  lines.push('| Table ID | Entity Name | Sub System | Columnas |');
+  lines.push('|---|---|---|---|');
+  tables.forEach(t => {
+    lines.push(`| ${mdCell(t.tableId || t.sheetName)} | ${mdCell(t.entityName)} | ${mdCell(t.subSystem)} | ${(t.columns || []).length} |`);
+  });
+
+  tables.forEach(t => {
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+    lines.push(...tableToMarkdownLines(t, dict, 2));
+  });
+
+  downloadMarkdown(lines.join('\n') + '\n', dict.name || 'diccionario');
+  showToast(`diccionario "${dict.name}" descargado`);
 }
 
 // ─── Acciones ───

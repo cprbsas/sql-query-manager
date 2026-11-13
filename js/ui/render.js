@@ -17,7 +17,7 @@ import {
   renderDictionariesPanel, importDictionary, renameDictionary,
   deleteDictionary, viewTable, handleDictSearch,
   openTableEditor, deleteTable, newEmptyDictionary,
-  viewDictionaryTables,
+  viewDictionaryTables, downloadDictionaryMarkdown,
 } from './dictionaries.js';
 import { openImportModal, openBatchModal } from './import.js';
 import { exportBackup, importBackup, resetAll } from './backup.js';
@@ -173,6 +173,7 @@ function setupGlobalListeners() {
         break;
       }
       case 'dict-view-tables': viewDictionaryTables(target.dataset.dictId); break;
+      case 'dict-download-md': downloadDictionaryMarkdown(target.dataset.dictId); break;
       case 'dict-rename': renameDictionary(target.dataset.dictId, render); break;
       case 'dict-delete': deleteDictionary(target.dataset.dictId, render); break;
       case 'dict-add-table': openTableEditor(target.dataset.dictId, null, render); break;
